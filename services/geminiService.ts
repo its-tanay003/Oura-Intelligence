@@ -1,4 +1,5 @@
-import { GoogleGenAI, Type, Chat, Modality } from "@google/genai";
+
+import { GoogleGenAI, Type, Chat, Modality, FunctionDeclaration } from "@google/genai";
 import { ThoughtRecord } from "../types";
 
 // Safety check for API Key
@@ -13,10 +14,32 @@ const handleMissingApi = (fallbackText: string): string => {
   return fallbackText;
 };
 
+// --- TOOLS ---
+
+const navigationFunction: FunctionDeclaration = {
+  name: 'navigate',
+  description: 'Navigate the user to a specific view in the application. Use this when the user expresses an intent to perform an action available in another section (e.g., logging data, breathing exercises, checking insights, or profile settings).',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      view: {
+        type: Type.STRING,
+        enum: ['HOME', 'LOG', 'MIND', 'INSIGHTS', 'PROFILE'],
+        description: 'The target view to navigate to.'
+      },
+      reason: {
+          type: Type.STRING,
+          description: 'A very brief explanation of why we are going there (e.g. "Let\'s log that sleep.").'
+      }
+    },
+    required: ['view']
+  }
+};
+
 /**
  * CHAT SERVICE
  * Uses gemini-3-pro-preview for complex reasoning and chat.
- * Supports Search Grounding and Thinking Mode.
+ * Supports Search Grounding, Thinking Mode, and Navigation Tools.
  */
 export const createChat = (systemInstruction: string) => {
   if (!ai) return null;
@@ -30,7 +53,7 @@ export const createChat = (systemInstruction: string) => {
 
 export const sendMessage = async (
   chat: Chat, 
-  message: string, 
+  message: string | any, 
   useThinking: boolean = false, 
   useSearch: boolean = false
 ) => {
@@ -40,19 +63,19 @@ export const sendMessage = async (
     temperature: 0.7,
   };
 
+  // Configure Tools
+  const tools: any[] = [{ functionDeclarations: [navigationFunction] }];
+  
+  if (useSearch) {
+    tools.push({ googleSearch: {} });
+  }
+  
+  config.tools = tools;
+
   if (useThinking) {
     // Gemini 3 Pro max thinking budget
     config.thinkingConfig = { thinkingBudget: 32768 }; 
   }
-
-  if (useSearch) {
-    config.tools = [{ googleSearch: {} }];
-  }
-
-  // If thinking is NOT enabled, we can set maxOutputTokens safely if we want, 
-  // but recommended practice is to avoid it unless necessary.
-  // If thinking IS enabled, we must NOT set maxOutputTokens or must set it carefully.
-  // We'll leave it unset to be safe.
 
   const response = await chat.sendMessage({
     message,

@@ -37,26 +37,26 @@ const MindMenu: React.FC<{ onSelect: (m: Mode) => void }> = ({ onSelect }) => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <Card 
         onClick={() => onSelect('REALITY')} 
-        className="cursor-pointer group hover:bg-teal-50/50 transition-colors border-l-4 border-l-transparent hover:border-l-teal-400"
+        className="cursor-pointer group hover:bg-teal-50/50 dark:hover:bg-teal-900/20 transition-colors border-l-4 border-l-transparent hover:border-l-teal-400"
       >
-        <div className="p-3 bg-teal-100 rounded-full text-teal-600 w-fit mb-4 group-hover:scale-110 transition-transform duration-500">
+        <div className="p-3 bg-teal-100 dark:bg-teal-900/40 rounded-full text-teal-600 dark:text-teal-400 w-fit mb-4 group-hover:scale-110 transition-transform duration-500">
           <Wind size={24} />
         </div>
-        <h3 className="text-lg font-medium text-slate-800 mb-2">Reality Check</h3>
-        <p className="text-slate-500 text-sm leading-relaxed">
+        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-2">Reality Check</h3>
+        <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
           Untangle heavy thoughts by separating feelings from facts.
         </p>
       </Card>
 
       <Card 
         onClick={() => onSelect('BREATH')} 
-        className="cursor-pointer group hover:bg-blue-50/50 transition-colors border-l-4 border-l-transparent hover:border-l-blue-400"
+        className="cursor-pointer group hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-colors border-l-4 border-l-transparent hover:border-l-blue-400"
       >
-        <div className="p-3 bg-blue-100 rounded-full text-blue-600 w-fit mb-4 group-hover:scale-110 transition-transform duration-500">
+        <div className="p-3 bg-blue-100 dark:bg-blue-900/40 rounded-full text-blue-600 dark:text-blue-400 w-fit mb-4 group-hover:scale-110 transition-transform duration-500">
           <Circle size={24} />
         </div>
-        <h3 className="text-lg font-medium text-slate-800 mb-2">Deep Breath</h3>
-        <p className="text-slate-500 text-sm leading-relaxed">
+        <h3 className="text-lg font-medium text-slate-800 dark:text-slate-100 mb-2">Deep Breath</h3>
+        <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
           Regulate your nervous system with visual and audio pacing.
         </p>
       </Card>
@@ -65,11 +65,11 @@ const MindMenu: React.FC<{ onSelect: (m: Mode) => void }> = ({ onSelect }) => (
     <div className="mt-8 px-2">
         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Grounding Truths</h4>
         <div className="space-y-3">
-        <div className="flex gap-4 text-slate-600 text-sm md:text-base p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+        <div className="flex gap-4 text-slate-600 dark:text-slate-300 text-sm md:text-base p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
                 <ShieldCheck size={20} className="text-teal-500 shrink-0 mt-0.5" />
                 <span>Feelings are real, but they are not facts.</span>
         </div>
-        <div className="flex gap-4 text-slate-600 text-sm md:text-base p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+        <div className="flex gap-4 text-slate-600 dark:text-slate-300 text-sm md:text-base p-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
                 <ShieldCheck size={20} className="text-teal-500 shrink-0 mt-0.5" />
                 <span>You don't have to solve everything today.</span>
         </div>
@@ -168,7 +168,7 @@ const BreathingTool: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="h-full flex flex-col">
             <button 
                 onClick={onBack} 
-                className="group flex items-center gap-2 text-slate-400 text-sm mb-4 hover:text-slate-600 px-3 py-2 -ml-3 rounded-lg hover:bg-slate-100/50 transition-all w-fit"
+                className="group flex items-center gap-2 text-slate-400 text-sm mb-4 hover:text-slate-600 dark:hover:text-slate-300 px-3 py-2 -ml-3 rounded-lg hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all w-fit"
             >
                 <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> 
                 Back
@@ -176,19 +176,19 @@ const BreathingTool: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
             <SectionHeader title="Deep Breath" subtitle="Coherent breathing (4s in, 6s out) to reset your rhythm." />
 
-            <Card className="flex-1 flex flex-col items-center justify-center py-12 relative overflow-hidden bg-gradient-to-b from-white to-blue-50/30">
+            <Card className="flex-1 flex flex-col items-center justify-center py-12 relative overflow-hidden bg-gradient-to-b from-white to-blue-50/30 dark:from-slate-900 dark:to-slate-800/50">
                 
                 {/* Visualizer */}
                 <div className="relative w-64 h-64 flex items-center justify-center mb-10">
                     {/* Outer Rings */}
-                    <div className={`absolute inset-0 rounded-full border-2 border-blue-100 transition-all duration-[4000ms] ease-in-out ${phase === 'INHALE' ? 'scale-110 opacity-100' : 'scale-100 opacity-50'}`} />
-                    <div className={`absolute inset-4 rounded-full border border-blue-200 transition-all duration-[4000ms] ease-in-out ${phase === 'INHALE' ? 'scale-105 opacity-80' : 'scale-95 opacity-40'}`} />
+                    <div className={`absolute inset-0 rounded-full border-2 border-blue-100 dark:border-blue-900/30 transition-all duration-[4000ms] ease-in-out ${phase === 'INHALE' ? 'scale-110 opacity-100' : 'scale-100 opacity-50'}`} />
+                    <div className={`absolute inset-4 rounded-full border border-blue-200 dark:border-blue-800/30 transition-all duration-[4000ms] ease-in-out ${phase === 'INHALE' ? 'scale-105 opacity-80' : 'scale-95 opacity-40'}`} />
                     
                     {/* Core Breath Circle */}
                     <div 
-                        className={`w-32 h-32 bg-blue-400 rounded-full shadow-lg shadow-blue-200 transition-all ease-in-out flex items-center justify-center z-10
-                            ${phase === 'INHALE' ? 'duration-[4000ms] scale-[2.2] bg-blue-300' : 'duration-[6000ms] scale-100 bg-blue-500'}
-                            ${phase === 'WAIT' ? 'duration-500 scale-100 bg-slate-200' : ''}
+                        className={`w-32 h-32 bg-blue-400 dark:bg-blue-600 rounded-full shadow-lg shadow-blue-200 dark:shadow-blue-900/50 transition-all ease-in-out flex items-center justify-center z-10
+                            ${phase === 'INHALE' ? 'duration-[4000ms] scale-[2.2] bg-blue-300 dark:bg-blue-500' : 'duration-[6000ms] scale-100 bg-blue-500 dark:bg-blue-700'}
+                            ${phase === 'WAIT' ? 'duration-500 scale-100 bg-slate-200 dark:bg-slate-700' : ''}
                         `}
                     >
                         <span className={`text-white font-medium tracking-widest uppercase text-sm transition-opacity duration-500 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
@@ -208,8 +208,8 @@ const BreathingTool: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                     onClick={() => setDuration(m)}
                                     className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                                         duration === m 
-                                        ? 'bg-blue-100 text-blue-700 ring-2 ring-blue-100' 
-                                        : 'bg-white border border-slate-200 text-slate-500 hover:border-blue-200'
+                                        ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 ring-2 ring-blue-100 dark:ring-blue-900/50' 
+                                        : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-200'
                                     }`}
                                 >
                                     {m} min
@@ -228,7 +228,7 @@ const BreathingTool: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
                         <Button 
                             onClick={handleStart} 
-                            className="w-full h-14 text-lg bg-blue-600 hover:bg-blue-700 shadow-blue-200"
+                            className="w-full h-14 text-lg bg-blue-600 hover:bg-blue-700 shadow-blue-200 dark:shadow-none"
                             isLoading={isPreparingAudio}
                         >
                             <Play size={20} fill="currentColor" />
@@ -237,7 +237,7 @@ const BreathingTool: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     </div>
                 ) : (
                     <div className="text-center space-y-6 animate-fade-in z-20">
-                         <div className="text-3xl font-light text-slate-700 tabular-nums tracking-tight">
+                         <div className="text-3xl font-light text-slate-700 dark:text-slate-200 tabular-nums tracking-tight">
                             {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
                         </div>
                         <Button 
@@ -293,20 +293,20 @@ const RealityCheckTool: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="animate-fade-in">
              <button 
                 onClick={onBack} 
-                className="group flex items-center gap-2 text-slate-400 text-sm mb-4 hover:text-slate-600 px-3 py-2 -ml-3 rounded-lg hover:bg-slate-100/50 transition-all w-fit"
+                className="group flex items-center gap-2 text-slate-400 text-sm mb-4 hover:text-slate-600 dark:hover:text-slate-300 px-3 py-2 -ml-3 rounded-lg hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all w-fit"
             >
                 <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> 
                 Back
             </button>
             <SectionHeader title="Reality Check" subtitle="Separate feelings from facts." />
-            <Card className="bg-gradient-to-br from-teal-50 to-white border-none py-10 md:py-14">
+            <Card className="bg-gradient-to-br from-teal-50 to-white dark:from-slate-900 dark:to-slate-800 border-none py-10 md:py-14">
             <div className="flex flex-col items-center text-center space-y-6 md:space-y-8 px-2">
-                <div className="p-4 bg-white rounded-full text-teal-600 shadow-sm ring-4 ring-teal-50/50">
+                <div className="p-4 bg-white dark:bg-teal-900/30 rounded-full text-teal-600 dark:text-teal-400 shadow-sm ring-4 ring-teal-50/50 dark:ring-teal-900/20">
                 <Wind size={40} />
                 </div>
                 <div className="space-y-3">
-                    <h3 className="text-xl md:text-2xl font-medium text-slate-800 tracking-tight">Heavy thoughts?</h3>
-                    <p className="text-slate-500 max-w-sm mx-auto leading-relaxed text-base md:text-lg">
+                    <h3 className="text-xl md:text-2xl font-medium text-slate-800 dark:text-slate-100 tracking-tight">Heavy thoughts?</h3>
+                    <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed text-base md:text-lg">
                     We often confuse what we assume with what actually happened. Let's untangle that.
                     </p>
                 </div>
@@ -323,7 +323,7 @@ const RealityCheckTool: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       <div className="animate-fade-in">
         <button 
           onClick={() => setStep(0)} 
-          className="group flex items-center gap-2 text-slate-400 text-sm mb-6 hover:text-slate-600 px-3 py-2 -ml-3 rounded-lg hover:bg-slate-100/50 transition-all touch-manipulation"
+          className="group flex items-center gap-2 text-slate-400 text-sm mb-6 hover:text-slate-600 dark:hover:text-slate-300 px-3 py-2 -ml-3 rounded-lg hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all touch-manipulation"
         >
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> 
           Step Back
@@ -331,14 +331,14 @@ const RealityCheckTool: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         
         <SectionHeader title="The Situation" />
         
-        <div className="space-y-6 md:space-y-8 bg-white p-5 md:p-10 rounded-[2rem] border border-slate-100 shadow-sm">
+        <div className="space-y-6 md:space-y-8 bg-white dark:bg-slate-900 p-5 md:p-10 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm">
             <div>
                 <div className="flex justify-between items-center mb-2 md:mb-3">
-                    <label className="block text-sm md:text-base font-medium text-slate-700">What actually happened?</label>
+                    <label className="block text-sm md:text-base font-medium text-slate-700 dark:text-slate-300">What actually happened?</label>
                     <VoiceInput onTranscript={appendText(setSituation)} />
                 </div>
                 <textarea 
-                    className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none resize-none h-28 md:h-32 text-base md:text-lg text-slate-700 placeholder:text-slate-300 transition-all shadow-inner"
+                    className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none resize-none h-28 md:h-32 text-base md:text-lg text-slate-700 dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-slate-600 transition-all shadow-inner"
                     placeholder="E.g., I missed a deadline."
                     value={situation}
                     onChange={e => setSituation(e.target.value)}
@@ -347,11 +347,11 @@ const RealityCheckTool: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
             <div>
                 <div className="flex justify-between items-center mb-2 md:mb-3">
-                    <label className="block text-sm md:text-base font-medium text-slate-700">What are you assuming this means?</label>
+                    <label className="block text-sm md:text-base font-medium text-slate-700 dark:text-slate-300">What are you assuming this means?</label>
                     <VoiceInput onTranscript={appendText(setThought)} />
                 </div>
                 <textarea 
-                    className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none resize-none h-28 md:h-32 text-base md:text-lg text-slate-700 placeholder:text-slate-300 transition-all shadow-inner"
+                    className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none resize-none h-28 md:h-32 text-base md:text-lg text-slate-700 dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-slate-600 transition-all shadow-inner"
                     placeholder="E.g., Everyone thinks I'm lazy and I'll get fired."
                     value={thought}
                     onChange={e => setThought(e.target.value)}
@@ -360,12 +360,12 @@ const RealityCheckTool: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
             <div>
                 <div className="flex justify-between items-center mb-2 md:mb-3">
-                    <label className="block text-sm md:text-base font-medium text-slate-700">One word for the emotion</label>
+                    <label className="block text-sm md:text-base font-medium text-slate-700 dark:text-slate-300">One word for the emotion</label>
                     <VoiceInput onTranscript={appendText(setFeeling)} />
                 </div>
                 <input 
                     type="text"
-                    className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:border-teal-500 outline-none text-base md:text-lg text-slate-700 placeholder:text-slate-300 shadow-inner"
+                    className="w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-teal-500 outline-none text-base md:text-lg text-slate-700 dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-slate-600 shadow-inner"
                     placeholder="E.g., Ashamed"
                     value={feeling}
                     onChange={e => setFeeling(e.target.value)}
@@ -390,7 +390,7 @@ const RealityCheckTool: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     <div className="animate-fade-in h-full flex flex-col">
        <button 
             onClick={() => setStep(0)} 
-            className="group flex items-center gap-2 text-slate-400 text-sm mb-6 hover:text-slate-600 px-3 py-2 -ml-3 rounded-lg hover:bg-slate-100/50 transition-all touch-manipulation"
+            className="group flex items-center gap-2 text-slate-400 text-sm mb-6 hover:text-slate-600 dark:hover:text-slate-300 px-3 py-2 -ml-3 rounded-lg hover:bg-slate-100/50 dark:hover:bg-slate-800/50 transition-all touch-manipulation"
         >
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> 
           New Check
@@ -398,21 +398,21 @@ const RealityCheckTool: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
        <SectionHeader title="A Shift in Perspective" />
        
-       <div className="bg-white p-6 md:p-10 rounded-[2rem] border border-slate-100 shadow-sm space-y-8 md:space-y-10">
-           <Card className="bg-slate-50 border-none p-5 md:p-6">
+       <div className="bg-white dark:bg-slate-900 p-6 md:p-10 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm space-y-8 md:space-y-10">
+           <Card className="bg-slate-50 dark:bg-slate-800 border-none p-5 md:p-6">
                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Your Assumption</p>
-               <p className="text-slate-600 italic text-base md:text-lg leading-relaxed">"{thought}"</p>
+               <p className="text-slate-600 dark:text-slate-300 italic text-base md:text-lg leading-relaxed">"{thought}"</p>
            </Card>
 
            <div className="relative pl-6 md:pl-8 py-2">
                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-teal-300 to-emerald-400 rounded-full"></div>
-               <h3 className="text-lg md:text-xl font-medium text-slate-800 mb-4">Let's reframe that.</h3>
-               <p className="text-slate-700 leading-8 text-lg md:text-xl">
+               <h3 className="text-lg md:text-xl font-medium text-slate-800 dark:text-slate-100 mb-4">Let's reframe that.</h3>
+               <p className="text-slate-700 dark:text-slate-300 leading-8 text-lg md:text-xl">
                    {reframe}
                </p>
            </div>
 
-           <div className="pt-6 md:pt-8 border-t border-slate-100">
+           <div className="pt-6 md:pt-8 border-t border-slate-100 dark:border-slate-800">
                <Button variant="secondary" onClick={reset} className="w-full h-12 md:h-14 text-base">
                    <RefreshCcw size={18} />
                    Start Over

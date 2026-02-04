@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, Button, SectionHeader, VoiceInput } from '../Shared';
 import { Moon, Droplets, Activity, Save, Edit3 } from 'lucide-react';
@@ -25,11 +26,11 @@ export const LogView: React.FC = () => {
   if (saved) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center animate-fade-in text-center px-4">
-        <div className="w-16 h-16 md:w-20 md:h-20 bg-teal-50 rounded-full flex items-center justify-center text-teal-600 mb-6 shadow-sm scale-110 duration-500 ease-out transition-transform">
+        <div className="w-16 h-16 md:w-20 md:h-20 bg-teal-50 dark:bg-teal-900/30 rounded-full flex items-center justify-center text-teal-600 dark:text-teal-400 mb-6 shadow-sm scale-110 duration-500 ease-out transition-transform">
           <Save size={32} className="md:w-10 md:h-10" />
         </div>
-        <h2 className="text-xl md:text-3xl font-medium text-slate-800 tracking-tight">Logged.</h2>
-        <p className="text-slate-500 mt-2 text-sm md:text-lg">Checking in is an act of self-care.</p>
+        <h2 className="text-xl md:text-3xl font-medium text-slate-800 dark:text-slate-100 tracking-tight">Logged.</h2>
+        <p className="text-slate-500 dark:text-slate-400 mt-2 text-sm md:text-lg">Checking in is an act of self-care.</p>
       </div>
     );
   }
@@ -40,10 +41,10 @@ export const LogView: React.FC = () => {
 
       {/* Sleep Section */}
       <section className="space-y-4">
-        <div className="flex items-center gap-3 text-slate-700 font-medium px-1">
+        <div className="flex items-center gap-3 text-slate-700 dark:text-slate-200 font-medium px-1">
           <Moon size={20} className="text-indigo-400" />
           <span className="text-base md:text-lg">Sleep</span>
-          <span className="ml-auto text-slate-400 font-normal text-sm md:text-base bg-slate-100 px-3 py-1 rounded-full">{sleep} hrs</span>
+          <span className="ml-auto text-slate-400 font-normal text-sm md:text-base bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">{sleep} hrs</span>
         </div>
         <Card variant="flat" className="py-8 md:py-10">
           <div className="px-2">
@@ -67,23 +68,23 @@ export const LogView: React.FC = () => {
 
       {/* Hydration Section */}
       <section className="space-y-4">
-         <div className="flex items-center gap-3 text-slate-700 font-medium px-1">
+         <div className="flex items-center gap-3 text-slate-700 dark:text-slate-200 font-medium px-1">
           <Droplets size={20} className="text-blue-400" />
           <span className="text-base md:text-lg">Hydration</span>
-          <span className="ml-auto text-slate-400 font-normal text-sm md:text-base bg-blue-50 text-blue-600 px-3 py-1 rounded-full">{hydration} glasses</span>
+          <span className="ml-auto text-slate-400 font-normal text-sm md:text-base bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 px-3 py-1 rounded-full">{hydration} glasses</span>
         </div>
         <div className="flex gap-3 md:gap-6">
             <button 
                 onClick={() => setHydration(Math.max(0, hydration - 1))}
-                className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-600 text-2xl font-medium hover:bg-slate-200 transition-colors active:scale-95 touch-manipulation"
+                className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 text-2xl font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors active:scale-95 touch-manipulation"
                 aria-label="Decrease hydration"
             >−</button>
-            <div className="flex-1 flex items-center justify-center bg-blue-50/50 rounded-2xl border border-blue-100 text-blue-800 text-xl font-medium">
+            <div className="flex-1 flex items-center justify-center bg-blue-50/50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800 text-blue-800 dark:text-blue-200 text-xl font-medium">
                 {hydration}
             </div>
             <button 
                 onClick={() => setHydration(hydration + 1)}
-                className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-blue-100 flex items-center justify-center text-blue-600 text-2xl font-medium hover:bg-blue-200 transition-colors active:scale-95 touch-manipulation"
+                className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-300 text-2xl font-medium hover:bg-blue-200 dark:hover:bg-blue-800/60 transition-colors active:scale-95 touch-manipulation"
                 aria-label="Increase hydration"
             >+</button>
         </div>
@@ -91,7 +92,7 @@ export const LogView: React.FC = () => {
 
       {/* Emotion Section */}
       <section className="space-y-4">
-        <div className="flex items-center gap-3 text-slate-700 font-medium px-1">
+        <div className="flex items-center gap-3 text-slate-700 dark:text-slate-200 font-medium px-1">
           <Activity size={20} className="text-rose-400" />
           <span className="text-base md:text-lg">How does the body feel?</span>
         </div>
@@ -99,7 +100,7 @@ export const LogView: React.FC = () => {
           {[Emotion.CALM, Emotion.TIRED, Emotion.ANXIOUS, Emotion.ENERGETIC].map((e) => (
              <button 
                key={e}
-               className="p-4 md:p-5 rounded-2xl border border-slate-100 text-slate-600 bg-white hover:bg-teal-50 hover:border-teal-100 hover:text-teal-700 transition-all text-sm md:text-base font-medium active:scale-[0.98] shadow-sm touch-manipulation"
+               className="p-4 md:p-5 rounded-2xl border border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:border-teal-100 dark:hover:border-teal-800 hover:text-teal-700 dark:hover:text-teal-400 transition-all text-sm md:text-base font-medium active:scale-[0.98] shadow-sm touch-manipulation"
              >
                 {e}
              </button>
@@ -109,7 +110,7 @@ export const LogView: React.FC = () => {
 
       {/* Notes Section with Voice Input */}
       <section className="space-y-4">
-          <div className="flex items-center justify-between text-slate-700 font-medium px-1">
+          <div className="flex items-center justify-between text-slate-700 dark:text-slate-200 font-medium px-1">
              <div className="flex items-center gap-3">
                  <Edit3 size={20} className="text-slate-400" />
                  <span className="text-base md:text-lg">Notes</span>
@@ -121,13 +122,13 @@ export const LogView: React.FC = () => {
                  value={notes}
                  onChange={(e) => setNotes(e.target.value)}
                  placeholder="Anything else on your mind? Tap the mic to speak."
-                 className="w-full h-32 p-4 rounded-3xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-teal-200 focus:ring-2 focus:ring-teal-50/50 outline-none resize-none transition-all placeholder:text-slate-400 text-slate-700 text-base leading-relaxed"
+                 className="w-full h-32 p-4 rounded-3xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 focus:bg-white dark:focus:bg-slate-900 focus:border-teal-200 dark:focus:border-teal-800 focus:ring-2 focus:ring-teal-50/50 dark:focus:ring-teal-900/30 outline-none resize-none transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600 text-slate-700 dark:text-slate-200 text-base leading-relaxed"
               />
           </div>
       </section>
 
       <div className="pt-6 md:pt-8">
-        <Button onClick={handleSave} className="w-full h-12 md:h-14 text-base md:text-lg shadow-lg shadow-teal-100/50">
+        <Button onClick={handleSave} className="w-full h-12 md:h-14 text-base md:text-lg shadow-lg shadow-teal-100/50 dark:shadow-none">
            Save to Log
         </Button>
       </div>

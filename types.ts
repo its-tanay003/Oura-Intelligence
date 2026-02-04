@@ -25,6 +25,7 @@ export interface User {
   avatar?: string;
   provider: 'email' | 'google' | 'apple';
   joinDate: string;
+  emailVerified?: boolean;
 }
 
 export interface UserProfile {

@@ -11,11 +11,13 @@ import { AuthModal } from './components/auth/AuthComponents';
 import { getSession, logout } from './services/authService';
 import { Home, PlusCircle, Brain, BarChart2, User as UserIcon, Layout, MessageCircle } from 'lucide-react';
 import { MotionProvider, PageTransition } from './components/Motion';
+import { ThemeProvider, useTheme } from './components/ThemeContext';
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const [activeView, setActiveView] = useState<View>(View.HOME);
   const [user, setUser] = useState<User | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const { theme } = useTheme();
 
   // Initialize Session
   useEffect(() => {
@@ -56,14 +58,13 @@ const App: React.FC = () => {
             onLogout={handleLogout}
         />
       );
-      case View.ASSISTANT: return <AssistantView />;
-      default: return <div className="p-8 text-center text-slate-500">Coming Soon</div>;
+      case View.ASSISTANT: return <AssistantView onChangeView={setActiveView} />;
+      default: return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Coming Soon</div>;
     }
   };
 
   return (
-    <MotionProvider>
-        <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-teal-100 flex flex-col">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans selection:bg-teal-100 dark:selection:bg-teal-900 flex flex-col transition-colors duration-500">
         
         {/* Global Auth Modal */}
         <AuthModal 
@@ -73,15 +74,15 @@ const App: React.FC = () => {
         />
 
         {/* Top Navigation - Desktop Friendly */}
-        <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/60 transition-all duration-300">
+        <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/60 transition-all duration-300">
             <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 md:h-20 flex items-center justify-between">
             
             {/* Brand */}
             <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setActiveView(View.HOME)}>
-                <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center text-white shadow-sm shadow-teal-200 transition-transform group-hover:scale-105 group-active:scale-95">
+                <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center text-white shadow-sm shadow-teal-200 dark:shadow-none transition-transform group-hover:scale-105 group-active:scale-95">
                 <Layout size={18} />
                 </div>
-                <span className="font-medium text-slate-800 tracking-tight text-lg">Oura <span className="text-slate-400 font-normal">Intelligence</span></span>
+                <span className="font-medium text-slate-800 dark:text-white tracking-tight text-lg">Oura <span className="text-slate-400 dark:text-slate-500 font-normal">Intelligence</span></span>
             </div>
 
             {/* Desktop Nav Links */}
@@ -97,9 +98,9 @@ const App: React.FC = () => {
             <div className="flex items-center gap-3">
                 <button 
                     onClick={() => handleProtectedAction(() => setActiveView(View.LOG))}
-                    className="group flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl transition-all duration-300 ease-calm shadow-md shadow-slate-200 active:scale-95 hover:shadow-lg"
+                    className="group flex items-center gap-2 bg-slate-800 dark:bg-white hover:bg-slate-700 dark:hover:bg-slate-100 text-white dark:text-slate-900 px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl transition-all duration-300 ease-calm shadow-md shadow-slate-200 dark:shadow-none active:scale-95 hover:shadow-lg"
                 >
-                    <PlusCircle size={18} className="text-teal-400 group-hover:text-teal-300 transition-colors" />
+                    <PlusCircle size={18} className="text-teal-400 dark:text-teal-600 group-hover:text-teal-300 dark:group-hover:text-teal-500 transition-colors" />
                     <span className="hidden sm:inline text-sm font-medium">Log Entry</span>
                     <span className="sm:hidden text-sm font-medium">Log</span>
                 </button>
@@ -107,12 +108,12 @@ const App: React.FC = () => {
                 {/* Desktop Avatar Preview */}
                 <button 
                     onClick={() => setActiveView(View.PROFILE)}
-                    className="hidden md:flex w-9 h-9 rounded-full bg-slate-200 hover:ring-4 hover:ring-slate-100 transition-all items-center justify-center overflow-hidden active:scale-95"
+                    className="hidden md:flex w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-800 hover:ring-4 hover:ring-slate-100 dark:hover:ring-slate-800/50 transition-all items-center justify-center overflow-hidden active:scale-95"
                 >
                     {user && user.avatar ? (
                         <img src={user.avatar} alt="User" className="w-full h-full object-cover" />
                     ) : (
-                        <UserIcon size={18} className="text-slate-500" />
+                        <UserIcon size={18} className="text-slate-500 dark:text-slate-400" />
                     )}
                 </button>
             </div>
@@ -128,7 +129,7 @@ const App: React.FC = () => {
         </main>
 
         {/* Mobile Bottom Nav (Visible only on small screens) */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-slate-100 z-50 pb-safe transition-transform duration-300">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 z-50 pb-safe transition-transform duration-300">
             <div className="flex justify-around items-center h-16 px-2">
                 <MobileIcon icon={<Home size={20} />} label="Home" isActive={activeView === View.HOME} onClick={() => setActiveView(View.HOME)} />
                 <MobileIcon icon={<MessageCircle size={20} />} label="Chat" isActive={activeView === View.ASSISTANT} onClick={() => setActiveView(View.ASSISTANT)} />
@@ -147,13 +148,20 @@ const App: React.FC = () => {
         </nav>
 
         {/* Simple Footer */}
-        <footer className="py-8 text-center text-slate-400 text-sm hidden md:block">
+        <footer className="py-8 text-center text-slate-400 dark:text-slate-600 text-sm hidden md:block">
             <p>© 2026 Oura Intelligence. Calm Technology.</p>
         </footer>
         </div>
-    </MotionProvider>
   );
 };
+
+const App: React.FC = () => (
+    <ThemeProvider>
+        <MotionProvider>
+            <AppContent />
+        </MotionProvider>
+    </ThemeProvider>
+);
 
 // Desktop Nav Link
 const NavLink = ({ label, active, onClick }: { label: string, active: boolean, onClick: () => void }) => (
@@ -161,8 +169,8 @@ const NavLink = ({ label, active, onClick }: { label: string, active: boolean, o
     onClick={onClick}
     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-calm ${
       active 
-        ? 'text-slate-800 bg-slate-100 scale-105' 
-        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50 hover:scale-105'
+        ? 'text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 scale-105' 
+        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900 hover:scale-105'
     }`}
   >
     {label}
@@ -173,7 +181,7 @@ const NavLink = ({ label, active, onClick }: { label: string, active: boolean, o
 const MobileIcon = ({ icon, label, isActive, onClick }: any) => (
   <button 
     onClick={onClick}
-    className={`flex flex-col items-center gap-1 w-16 py-1 transition-all duration-200 active:scale-90 touch-manipulation ${isActive ? 'text-teal-600 -translate-y-1' : 'text-slate-400'}`}
+    className={`flex flex-col items-center gap-1 w-16 py-1 transition-all duration-200 active:scale-90 touch-manipulation ${isActive ? 'text-teal-600 dark:text-teal-400 -translate-y-1' : 'text-slate-400 dark:text-slate-500'}`}
   >
     {icon}
     <span className="text-[10px] font-medium">{label}</span>

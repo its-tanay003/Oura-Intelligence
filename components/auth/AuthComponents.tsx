@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import { Button, Input, Modal } from '../Shared';
-import { Mail, Lock, Check, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react';
-import { loginWithEmail, signupWithEmail, loginWithGoogle, validatePasswordStrength } from '../../services/authService';
+import { Mail, Lock, Check, ArrowRight, ShieldCheck, AlertCircle, RefreshCw, Inbox } from 'lucide-react';
+import { loginWithEmail, signupWithEmail, loginWithGoogle, validatePasswordStrength, resendVerificationEmail } from '../../services/authService';
 import { User } from '../../types';
 
 interface AuthFormProps {
@@ -16,6 +16,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, initialMode = 'lo
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    
+    // Verification State
+    const [pendingUser, setPendingUser] = useState<User | null>(null);
+    const [isResending, setIsResending] = useState(false);
+    const [resendStatus, setResendStatus] = useState<'idle' | 'sent'>('idle');
 
     const isSignup = mode === 'signup';
     const passwordStrength = validatePasswordStrength(password);
@@ -26,10 +31,14 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, initialMode = 'lo
         setIsLoading(true);
 
         try {
-            const user = isSignup 
-                ? await signupWithEmail(email, password)
-                : await loginWithEmail(email, password);
-            onSuccess(user);
+            if (isSignup) {
+                const user = await signupWithEmail(email, password);
+                // Don't call onSuccess yet, show verification
+                setPendingUser(user);
+            } else {
+                const user = await loginWithEmail(email, password);
+                onSuccess(user);
+            }
         } catch (err: any) {
             setError(err.message || "An unexpected issue occurred.");
         } finally {
@@ -50,18 +59,92 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, initialMode = 'lo
         }
     };
 
+    const handleResend = async () => {
+        if (!pendingUser) return;
+        setIsResending(true);
+        try {
+            await resendVerificationEmail(pendingUser.email);
+            setResendStatus('sent');
+            setTimeout(() => setResendStatus('idle'), 3000); // Reset status after 3s
+        } catch (e) {
+            setError("Failed to resend email.");
+        } finally {
+            setIsResending(false);
+        }
+    };
+
+    const handleVerificationComplete = () => {
+        if (pendingUser) {
+            // In a real app, we would verify the token here.
+            // For mock, we assume they clicked the link and are now verified.
+            const verifiedUser = { ...pendingUser, emailVerified: true };
+            localStorage.setItem('oura_session', JSON.stringify(verifiedUser));
+            onSuccess(verifiedUser);
+        }
+    };
+
+    // --- VERIFICATION VIEW ---
+    if (pendingUser) {
+        return (
+            <div className="animate-fade-in w-full max-w-sm mx-auto p-2 text-center">
+                <div className="w-16 h-16 bg-teal-50 dark:bg-teal-900/30 rounded-full flex items-center justify-center text-teal-600 dark:text-teal-400 mx-auto mb-6 shadow-sm shadow-teal-100 dark:shadow-none relative">
+                    <Inbox size={32} />
+                    <div className="absolute top-0 right-0 bg-white dark:bg-slate-900 rounded-full p-1 shadow-sm">
+                        <div className="w-3 h-3 bg-rose-500 rounded-full animate-pulse" />
+                    </div>
+                </div>
+
+                <h2 className="text-2xl font-medium text-slate-800 dark:text-slate-100 tracking-tight mb-2">Check your inbox</h2>
+                <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-8">
+                    To secure your account, we've sent a verification link to <span className="font-medium text-slate-700 dark:text-slate-200">{pendingUser.email}</span>.
+                </p>
+
+                <div className="space-y-3">
+                    <Button 
+                        onClick={handleVerificationComplete}
+                        className="w-full h-14 text-base shadow-lg shadow-teal-100/50 dark:shadow-none"
+                    >
+                        I've Verified
+                    </Button>
+                    
+                    <Button 
+                        variant="ghost" 
+                        onClick={handleResend}
+                        disabled={isResending || resendStatus === 'sent'}
+                        className="w-full h-12 text-sm"
+                    >
+                        {isResending ? (
+                            <RefreshCw size={16} className="animate-spin mr-2" />
+                        ) : resendStatus === 'sent' ? (
+                            <Check size={16} className="text-emerald-500 mr-2" />
+                        ) : null}
+                        {resendStatus === 'sent' ? "Email Sent" : "Resend Verification Email"}
+                    </Button>
+                </div>
+
+                <button 
+                    onClick={() => setPendingUser(null)}
+                    className="mt-6 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                >
+                    Use a different email
+                </button>
+            </div>
+        );
+    }
+
+    // --- LOGIN / SIGNUP VIEW ---
     return (
         <div className="animate-fade-in w-full max-w-sm mx-auto p-2">
             
             {/* Header */}
             <div className="text-center mb-8">
-                <div className="w-12 h-12 bg-teal-50 rounded-2xl flex items-center justify-center text-teal-600 mx-auto mb-4 shadow-sm shadow-teal-100">
+                <div className="w-12 h-12 bg-teal-50 dark:bg-teal-900/30 rounded-2xl flex items-center justify-center text-teal-600 dark:text-teal-400 mx-auto mb-4 shadow-sm shadow-teal-100 dark:shadow-none">
                     <ShieldCheck size={24} />
                 </div>
-                <h2 className="text-2xl font-medium text-slate-800 tracking-tight">
+                <h2 className="text-2xl font-medium text-slate-800 dark:text-slate-100 tracking-tight">
                     {isSignup ? "Create your space" : "Welcome back"}
                 </h2>
-                <p className="text-slate-500 text-sm mt-2">
+                <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">
                     {isSignup ? "Private, secure, and always under your control." : "Enter your credentials to access your insights."}
                 </p>
             </div>
@@ -71,11 +154,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, initialMode = 'lo
                 type="button"
                 onClick={handleGoogle}
                 disabled={isLoading}
-                className="w-full h-14 bg-white border border-slate-200 hover:bg-slate-50 active:bg-slate-100 rounded-2xl flex items-center justify-center gap-3 transition-all duration-200 group mb-6 relative overflow-hidden"
+                className="w-full h-14 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 active:bg-slate-100 dark:active:bg-slate-600 rounded-2xl flex items-center justify-center gap-3 transition-all duration-200 group mb-6 relative overflow-hidden"
             >
                 {isLoading ? (
-                    <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
-                        <div className="h-1 w-full bg-slate-100 overflow-hidden absolute bottom-0 left-0">
+                    <div className="absolute inset-0 bg-white/50 dark:bg-slate-900/50 flex items-center justify-center z-10">
+                        <div className="h-1 w-full bg-slate-100 dark:bg-slate-800 overflow-hidden absolute bottom-0 left-0">
                             <div className="h-full bg-teal-500 w-1/3 animate-[slide_1s_infinite_linear]" />
                         </div>
                     </div>
@@ -87,13 +170,13 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, initialMode = 'lo
                     <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                 </svg>
-                <span className="font-medium text-slate-700">Continue with Google</span>
+                <span className="font-medium text-slate-700 dark:text-slate-200">Continue with Google</span>
             </button>
 
             <div className="flex items-center gap-4 mb-6">
-                <div className="h-px bg-slate-100 flex-1" />
+                <div className="h-px bg-slate-100 dark:bg-slate-800 flex-1" />
                 <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Or with email</span>
-                <div className="h-px bg-slate-100 flex-1" />
+                <div className="h-px bg-slate-100 dark:bg-slate-800 flex-1" />
             </div>
 
             {/* Email Form */}
@@ -127,7 +210,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, initialMode = 'lo
                                         className={`flex-1 rounded-full transition-all duration-500 ${
                                             passwordStrength >= step 
                                                 ? (passwordStrength < 2 ? 'bg-amber-300' : passwordStrength < 4 ? 'bg-teal-300' : 'bg-teal-500') 
-                                                : 'bg-slate-100'
+                                                : 'bg-slate-100 dark:bg-slate-800'
                                         }`}
                                     />
                                 ))}
@@ -141,7 +224,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, initialMode = 'lo
 
                 {/* Error Message */}
                 {error && (
-                    <div className="p-3 bg-amber-50 rounded-xl flex gap-3 text-amber-700 text-sm items-start animate-fade-in">
+                    <div className="p-3 bg-amber-50 dark:bg-amber-900/30 rounded-xl flex gap-3 text-amber-700 dark:text-amber-300 text-sm items-start animate-fade-in">
                         <AlertCircle size={16} className="mt-0.5 shrink-0" />
                         <p className="leading-relaxed">{error}</p>
                     </div>
@@ -149,7 +232,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, initialMode = 'lo
 
                 <Button 
                     type="submit" 
-                    className="w-full h-14 text-base shadow-lg shadow-teal-100/50 mt-2" 
+                    className="w-full h-14 text-base shadow-lg shadow-teal-100/50 dark:shadow-none mt-2" 
                     isLoading={isLoading}
                 >
                     {isSignup ? "Create Account" : "Sign In"}
@@ -159,12 +242,12 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, initialMode = 'lo
 
             {/* Footer */}
             <div className="mt-8 text-center">
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                     {isSignup ? "Already have an account?" : "No account yet?"}{" "}
                     <button 
                         type="button"
                         onClick={() => setMode(isSignup ? 'login' : 'signup')}
-                        className="font-medium text-teal-600 hover:text-teal-700 transition-colors"
+                        className="font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
                     >
                         {isSignup ? "Sign in" : "Create one"}
                     </button>

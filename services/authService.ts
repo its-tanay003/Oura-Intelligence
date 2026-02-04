@@ -45,7 +45,8 @@ export const loginWithEmail = async (email: string, password: string): Promise<U
     email,
     name: email.split('@')[0],
     provider: 'email',
-    joinDate: new Date().toISOString()
+    joinDate: new Date().toISOString(),
+    emailVerified: true
   };
   
   localStorage.setItem('oura_session', JSON.stringify(user));
@@ -63,11 +64,18 @@ export const signupWithEmail = async (email: string, password: string): Promise<
     email,
     name: email.split('@')[0],
     provider: 'email',
-    joinDate: new Date().toISOString()
+    joinDate: new Date().toISOString(),
+    emailVerified: false // Needs verification
   };
 
-  localStorage.setItem('oura_session', JSON.stringify(user));
+  // Note: We typically don't set the session immediately for unverified users in strict systems,
+  // but for this UX flow, we return the user object to the UI to handle the verification step.
   return user;
+};
+
+export const resendVerificationEmail = async (email: string): Promise<boolean> => {
+    await new Promise(resolve => setTimeout(resolve, MOCK_DELAY));
+    return true;
 };
 
 export const loginWithGoogle = async (): Promise<User> => {
@@ -80,7 +88,8 @@ export const loginWithGoogle = async (): Promise<User> => {
     name: 'Alex Doe',
     avatar: 'https://ui-avatars.com/api/?name=Alex+Doe&background=0D9488&color=fff',
     provider: 'google',
-    joinDate: new Date().toISOString()
+    joinDate: new Date().toISOString(),
+    emailVerified: true
   };
 
   localStorage.setItem('oura_session', JSON.stringify(user));

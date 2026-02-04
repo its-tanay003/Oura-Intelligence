@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             colors: {
@@ -14,8 +15,14 @@
                 50: '#f8fafc', // Ultra soft background
                 100: '#f1f5f9',
                 200: '#e2e8f0',
-                600: '#475569', // Primary text
-                800: '#1e293b', // Headers
+                300: '#cbd5e1',
+                400: '#94a3b8',
+                500: '#64748b',
+                600: '#475569', // Primary text light
+                700: '#334155',
+                800: '#1e293b', // Headers light / Cards dark
+                900: '#0f172a', // Deep background
+                950: '#020617', // Ultra dark background
               },
               teal: {
                 50: '#f0fdfa',
@@ -84,6 +91,12 @@
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         background-color: #f8fafc;
+        /* Global smooth transition for dark mode toggling */
+        transition: background-color 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      .dark body {
+        background-color: #020617; /* slate-950 */
+        color: #f1f5f9; /* slate-100 */
       }
       /* Custom Range Slider Styling for "Soft" feel */
       input[type=range] {
@@ -110,6 +123,11 @@
         cursor: pointer;
         background: #e2e8f0;
         border-radius: 2px;
+        transition: background-color 0.3s;
+      }
+      /* Dark mode track */
+      .dark input[type=range]::-webkit-slider-runnable-track {
+        background: #334155;
       }
       /* Hide scrollbar for Chrome, Safari and Opera */
       .scrollbar-hide::-webkit-scrollbar {

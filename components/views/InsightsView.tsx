@@ -1,9 +1,11 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, SectionHeader, EmptyState } from '../Shared';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { generateDailyInsight } from '../../services/geminiService';
 import { Sparkles, Calendar } from 'lucide-react';
 import { View, Emotion, DailyLog } from '../../types';
+import { useTheme } from '../ThemeContext';
 
 // Mock Data for demonstration
 const mockLogs: DailyLog[] = [
@@ -27,6 +29,7 @@ interface InsightsViewProps {
 
 export const InsightsView: React.FC<InsightsViewProps> = ({ onChangeView }) => {
   const [insight, setInsight] = useState<{title: string, body: string} | null>(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     // Fetch insights using Gemini
@@ -67,22 +70,22 @@ export const InsightsView: React.FC<InsightsViewProps> = ({ onChangeView }) => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-8">
         {/* AI Insight Section */}
         <div className="md:col-span-1">
-            <Card variant="highlight" className="border-l-4 border-l-teal-400 h-full p-5 md:p-6 bg-teal-50/50">
+            <Card variant="highlight" className="border-l-4 border-l-teal-400 dark:border-l-teal-500 h-full p-5 md:p-6 bg-teal-50/50 dark:bg-teal-900/20">
                 <div className="flex gap-3 mb-3 md:mb-4">
-                    <Sparkles size={20} className="text-teal-600 mt-0.5 shrink-0" />
-                    <h3 className="font-medium text-slate-800 text-lg">{insight ? insight.title : "Noticing Patterns..."}</h3>
+                    <Sparkles size={20} className="text-teal-600 dark:text-teal-400 mt-0.5 shrink-0" />
+                    <h3 className="font-medium text-slate-800 dark:text-slate-100 text-lg">{insight ? insight.title : "Noticing Patterns..."}</h3>
                 </div>
-                <p className="text-slate-600 text-sm md:text-base leading-relaxed">
+                <p className="text-slate-600 dark:text-slate-300 text-sm md:text-base leading-relaxed">
                     {insight ? insight.body : "Looking at your recent rest and rhythm to find helpful connections."}
                 </p>
             </Card>
         </div>
 
         {/* Chart */}
-        <section className="md:col-span-2 bg-white p-5 md:p-8 rounded-[2rem] border border-slate-100 shadow-sm">
+        <section className="md:col-span-2 bg-white dark:bg-slate-900 p-5 md:p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm">
             <div className="mb-6 flex items-center justify-between">
                 <h3 className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-wider">Weekly Rhythm</h3>
-                <span className="text-[10px] md:text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded-full">Last 7 Days</span>
+                <span className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">Last 7 Days</span>
             </div>
             
             <div className="h-64 md:h-72 w-full">
@@ -92,16 +95,26 @@ export const InsightsView: React.FC<InsightsViewProps> = ({ onChangeView }) => {
                         dataKey="day" 
                         axisLine={false} 
                         tickLine={false} 
-                        tick={{fill: '#94a3b8', fontSize: 13}} 
+                        tick={{fill: theme === 'dark' ? '#94a3b8' : '#94a3b8', fontSize: 13}} 
                         dy={10}
                     />
                     <Tooltip 
-                        cursor={{fill: '#f1f5f9', radius: 4}}
-                        contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', padding: '8px 12px'}}
+                        cursor={{fill: theme === 'dark' ? '#1e293b' : '#f1f5f9', radius: 4}}
+                        contentStyle={{
+                            borderRadius: '12px', 
+                            border: 'none', 
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.1)', 
+                            padding: '8px 12px',
+                            backgroundColor: theme === 'dark' ? '#1e293b' : '#fff',
+                            color: theme === 'dark' ? '#f1f5f9' : '#1e293b'
+                        }}
                     />
                     <Bar dataKey="score" radius={[6, 6, 6, 6]}>
                     {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.score > 80 ? '#14b8a6' : '#cbd5e1'} />
+                        <Cell 
+                            key={`cell-${index}`} 
+                            fill={entry.score > 80 ? '#14b8a6' : (theme === 'dark' ? '#334155' : '#cbd5e1')} 
+                        />
                     ))}
                     </Bar>
                 </BarChart>
@@ -113,7 +126,7 @@ export const InsightsView: React.FC<InsightsViewProps> = ({ onChangeView }) => {
         </section>
       </div>
       
-      <Card variant="flat" className="text-center py-6 md:py-8 bg-slate-50/50">
+      <Card variant="flat" className="text-center py-6 md:py-8 bg-slate-50/50 dark:bg-slate-900/50">
           <p className="text-sm md:text-base text-slate-500 italic">
               "You don't need to be at 100% to be worthy."
           </p>

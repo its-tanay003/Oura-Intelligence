@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button, SectionHeader } from '../Shared';
 import { ai, createChat, sendMessage, generateImage, generateSpeech, transcribeAudio } from '../../services/geminiService';
 import { LiveServerMessage, Modality } from '@google/genai';
 import { Mic, Send, Image as ImageIcon, Sparkles, Volume2, Globe, Brain, StopCircle, X, Loader2, Radio } from 'lucide-react';
+import { View } from '../../types';
 
 interface Message {
   id: string;
@@ -13,7 +15,11 @@ interface Message {
   groundingUrls?: {title: string, uri: string}[];
 }
 
-export const AssistantView: React.FC = () => {
+interface AssistantViewProps {
+    onChangeView?: (view: View) => void;
+}
+
+export const AssistantView: React.FC<AssistantViewProps> = ({ onChangeView }) => {
   const [mode, setMode] = useState<'CHAT' | 'LIVE'>('CHAT');
   const [messages, setMessages] = useState<Message[]>([
     { id: '1', role: 'model', text: "Hello. I'm your calm intelligence assistant. How can I support you today?" }
@@ -34,7 +40,7 @@ export const AssistantView: React.FC = () => {
   // Initialize Chat
   useEffect(() => {
     if (!chatRef.current) {
-      chatRef.current = createChat("You are a supportive, calm, and intelligent assistant focused on mental wellbeing and clarity. Keep answers concise unless asked to elaborate.");
+      chatRef.current = createChat("You are a supportive, calm, and intelligent assistant focused on mental wellbeing and clarity. You can navigate the user to different parts of the app (Log, Mind, Insights, Profile, Home) if they express a desire to do so (e.g. 'I want to log sleep', 'Help me breathe', 'Show my stats'). Keep answers concise unless asked to elaborate.");
     }
   }, []);
 
@@ -61,20 +67,57 @@ export const AssistantView: React.FC = () => {
         }
       } else {
         // Chat Mode
-        const response = await sendMessage(chatRef.current, userMsg.text || '', useThinking, useSearch);
+        let response = await sendMessage(chatRef.current, userMsg.text || '', useThinking, useSearch);
         
+        // --- Tool Call Handling Loop ---
+        if (response.functionCalls && response.functionCalls.length > 0) {
+            const functionCalls = response.functionCalls;
+            const functionResponses = [];
+
+            for (const call of functionCalls) {
+                if (call.name === 'navigate' && onChangeView) {
+                    const args = call.args as any;
+                    console.log("Navigating to:", args.view);
+                    
+                    // Execute Navigation
+                    onChangeView(args.view as View);
+                    
+                    // Prepare response for the model
+                    functionResponses.push({
+                        name: call.name,
+                        response: { success: true, message: `Navigated user to ${args.view}` }
+                    });
+
+                    // Add a system message to chat to inform user (optional, but good UX)
+                    setMessages(prev => [...prev, { 
+                        id: Date.now().toString(), 
+                        role: 'model', 
+                        text: `*Navigating to ${args.view}...*` 
+                    }]);
+                }
+            }
+
+            // Send tool output back to model to complete the turn
+            if (functionResponses.length > 0) {
+                response = await sendMessage(chatRef.current, functionResponses);
+            }
+        }
+
         const grounding = response.candidates?.[0]?.groundingMetadata?.groundingChunks
             ?.map((c: any) => c.web ? { title: c.web.title, uri: c.web.uri } : null)
             .filter(Boolean);
 
-        setMessages(prev => [...prev, { 
-            id: Date.now().toString(), 
-            role: 'model', 
-            text: response.text,
-            groundingUrls: grounding
-        }]);
+        if (response.text) {
+            setMessages(prev => [...prev, { 
+                id: Date.now().toString(), 
+                role: 'model', 
+                text: response.text,
+                groundingUrls: grounding
+            }]);
+        }
       }
     } catch (e) {
+      console.error(e);
       setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: "I encountered a hiccup. Please try again." }]);
     } finally {
       setIsLoading(false);
@@ -137,7 +180,7 @@ export const AssistantView: React.FC = () => {
     <div className="h-[calc(100vh-8rem)] flex flex-col animate-fade-in relative">
       <div className="flex justify-between items-center mb-4">
         <SectionHeader title="Companion" subtitle="Gemini 3 Powered" />
-        <Button onClick={() => setMode('LIVE')} variant="soft" className="rounded-full h-10 w-10 p-0 flex items-center justify-center bg-rose-50 text-rose-500 hover:bg-rose-100">
+        <Button onClick={() => setMode('LIVE')} variant="soft" className="rounded-full h-10 w-10 p-0 flex items-center justify-center bg-rose-50 dark:bg-rose-900/20 text-rose-500 hover:bg-rose-100 dark:hover:bg-rose-900/30">
             <Radio size={18} />
         </Button>
       </div>
@@ -148,8 +191,8 @@ export const AssistantView: React.FC = () => {
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[85%] rounded-2xl p-4 ${
               msg.role === 'user' 
-                ? 'bg-slate-800 text-white rounded-br-none' 
-                : 'bg-white border border-slate-100 text-slate-700 rounded-bl-none shadow-sm'
+                ? 'bg-slate-800 dark:bg-teal-700 text-white rounded-br-none' 
+                : 'bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-bl-none shadow-sm'
             }`}>
               {msg.image ? (
                 <img src={msg.image} alt="Generated" className="rounded-xl w-full max-w-sm" />
@@ -159,7 +202,7 @@ export const AssistantView: React.FC = () => {
               
               {/* Grounding Sources */}
               {msg.groundingUrls && msg.groundingUrls.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-slate-100/20">
+                  <div className="mt-3 pt-3 border-t border-slate-100/20 dark:border-slate-700/50">
                       <p className="text-xs font-bold uppercase opacity-50 mb-1">Sources</p>
                       <div className="flex flex-wrap gap-2">
                         {msg.groundingUrls.map((url, i) => (
@@ -173,7 +216,7 @@ export const AssistantView: React.FC = () => {
 
               {/* Actions */}
               {msg.role === 'model' && msg.text && (
-                  <button onClick={() => handleTTS(msg.text!)} className="mt-2 text-slate-400 hover:text-teal-600 transition-colors">
+                  <button onClick={() => handleTTS(msg.text!)} className="mt-2 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
                       <Volume2 size={16} />
                   </button>
               )}
@@ -182,7 +225,7 @@ export const AssistantView: React.FC = () => {
         ))}
         {isLoading && (
             <div className="flex justify-start">
-                <div className="bg-white border border-slate-100 rounded-2xl p-4 rounded-bl-none shadow-sm flex items-center gap-2 text-slate-500 text-sm">
+                <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 rounded-bl-none shadow-sm flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
                     <Loader2 size={16} className="animate-spin text-teal-500" />
                     {useThinking ? "Thinking deeply..." : isCreative ? "Creating image..." : "Typing..."}
                 </div>
@@ -192,16 +235,16 @@ export const AssistantView: React.FC = () => {
       </div>
 
       {/* Input Area */}
-      <div className="bg-white/80 backdrop-blur-md rounded-[2rem] border border-slate-200 p-2 shadow-lg relative z-20">
+      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-[2rem] border border-slate-200 dark:border-slate-800 p-2 shadow-lg dark:shadow-black/20 relative z-20">
         
         {/* Toolbar */}
-        <div className="flex items-center gap-2 px-2 pb-2 border-b border-slate-100 mb-2">
+        <div className="flex items-center gap-2 px-2 pb-2 border-b border-slate-100 dark:border-slate-800 mb-2">
             
             {/* Thinking Toggle */}
             <button 
                 onClick={() => setUseThinking(!useThinking)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    useThinking ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                    useThinking ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
             >
                 <Brain size={14} /> Think
@@ -211,7 +254,7 @@ export const AssistantView: React.FC = () => {
             <button 
                 onClick={() => setUseSearch(!useSearch)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    useSearch ? 'bg-blue-100 text-blue-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                    useSearch ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
             >
                 <Globe size={14} /> Search
@@ -221,7 +264,7 @@ export const AssistantView: React.FC = () => {
              <button 
                 onClick={() => setIsCreative(!isCreative)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    isCreative ? 'bg-purple-100 text-purple-700' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'
+                    isCreative ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
                 }`}
             >
                 <ImageIcon size={14} /> Creative
@@ -231,7 +274,7 @@ export const AssistantView: React.FC = () => {
                  <select 
                     value={aspectRatio} 
                     onChange={(e) => setAspectRatio(e.target.value)}
-                    className="text-xs bg-slate-50 border-none rounded-full px-2 py-1 text-slate-600 focus:ring-0 cursor-pointer"
+                    className="text-xs bg-slate-50 dark:bg-slate-800 border-none rounded-full px-2 py-1 text-slate-600 dark:text-slate-300 focus:ring-0 cursor-pointer"
                  >
                      <option value="1:1">1:1</option>
                      <option value="16:9">16:9</option>
@@ -245,7 +288,7 @@ export const AssistantView: React.FC = () => {
         <div className="flex items-center gap-2">
             <button 
                 onClick={toggleRecording}
-                className={`p-3 rounded-full transition-all ${isRecording ? 'bg-rose-100 text-rose-500 animate-pulse' : 'text-slate-400 hover:bg-slate-100'}`}
+                className={`p-3 rounded-full transition-all ${isRecording ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-500 animate-pulse' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
             >
                 <Mic size={20} />
             </button>
@@ -254,7 +297,7 @@ export const AssistantView: React.FC = () => {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 placeholder={isCreative ? "Describe an image to generate..." : "Ask anything..."}
-                className="flex-1 bg-transparent border-none focus:ring-0 text-slate-800 placeholder:text-slate-400 text-base"
+                className="flex-1 bg-transparent border-none focus:ring-0 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-600 text-base"
                 disabled={isLoading}
             />
             <button 
@@ -262,8 +305,8 @@ export const AssistantView: React.FC = () => {
                 disabled={!input.trim() || isLoading}
                 className={`p-3 rounded-full transition-all ${
                     input.trim() 
-                        ? 'bg-teal-600 text-white shadow-md shadow-teal-200 hover:bg-teal-700' 
-                        : 'bg-slate-100 text-slate-300'
+                        ? 'bg-teal-600 text-white shadow-md shadow-teal-200 dark:shadow-none hover:bg-teal-700' 
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-300 dark:text-slate-600'
                 }`}
             >
                 {isCreative ? <Sparkles size={20} /> : <Send size={20} />}
