@@ -7,7 +7,8 @@ export enum View {
   GOALS = 'GOALS',
   PROFILE = 'PROFILE',
   ASSISTANT = 'ASSISTANT',
-  CONNECT = 'CONNECT'
+  CONNECT = 'CONNECT',
+  SIMULATOR = 'SIMULATOR'
 }
 
 export enum Emotion {
@@ -108,4 +109,10 @@ export interface TrustedContact {
   relationship: string;
   phone: string;
   method: 'call' | 'message';
+}
+
+export interface SimulationParams {
+  sleepDelta: number; // Hours +/-
+  stressLoad: number; // 0-100
+  socialBattery: number; // 0-100
 }

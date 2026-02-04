@@ -8,11 +8,13 @@ import { InsightsView } from './components/views/InsightsView';
 import { ProfileView } from './components/views/ProfileView';
 import { AssistantView } from './components/views/AssistantView';
 import { GoalsView } from './components/views/GoalsView';
+import { SimulatorView } from './components/views/SimulatorView'; // Import
 import { AuthModal } from './components/auth/AuthComponents';
 import { getSession, logout } from './services/authService';
-import { Home, PlusCircle, Brain, BarChart2, User as UserIcon, Layout, MessageCircle, Compass } from 'lucide-react';
+import { Home, PlusCircle, Brain, BarChart2, User as UserIcon, Layout, MessageCircle, Compass, Waves } from 'lucide-react';
 import { MotionProvider, PageTransition } from './components/Motion';
 import { ThemeProvider, useTheme } from './components/ThemeContext';
+import { ambient } from './services/ambientService'; // Import audio
 
 const AppContent: React.FC = () => {
   const [activeView, setActiveView] = useState<View>(View.HOME);
@@ -24,6 +26,14 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     const session = getSession();
     if (session) setUser(session);
+    
+    // Resume audio context on first user interaction
+    const initAudio = () => {
+        ambient.resume();
+        window.removeEventListener('click', initAudio);
+    };
+    window.addEventListener('click', initAudio);
+
   }, []);
 
   const handleLoginSuccess = (u: User) => {
@@ -46,14 +56,20 @@ const AppContent: React.FC = () => {
     }
   };
 
+  const handleNav = (view: View) => {
+      setActiveView(view);
+      ambient.playInteraction('tap'); // Audio Feedback
+  };
+
   const renderView = () => {
     switch (activeView) {
-      case View.HOME: return <HomeView onChangeView={setActiveView} />;
+      case View.HOME: return <HomeView onChangeView={handleNav} />;
       case View.LOG: return <LogView />;
       case View.MIND: return <MindView initialMode="MENU" />;
       case View.CONNECT: return <MindView initialMode="CONNECT" />;
       case View.GOALS: return <GoalsView />;
-      case View.INSIGHTS: return <InsightsView onChangeView={setActiveView} />;
+      case View.SIMULATOR: return <SimulatorView />;
+      case View.INSIGHTS: return <InsightsView onChangeView={handleNav} />;
       case View.PROFILE: return (
         <ProfileView 
             user={user} 
@@ -61,7 +77,7 @@ const AppContent: React.FC = () => {
             onLogout={handleLogout}
         />
       );
-      case View.ASSISTANT: return <AssistantView onChangeView={setActiveView} />;
+      case View.ASSISTANT: return <AssistantView onChangeView={handleNav} />;
       default: return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Coming Soon</div>;
     }
   };
@@ -81,7 +97,7 @@ const AppContent: React.FC = () => {
             <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 md:h-20 flex items-center justify-between">
             
             {/* Brand */}
-            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setActiveView(View.HOME)}>
+            <div className="flex items-center gap-3 cursor-pointer group" onClick={() => handleNav(View.HOME)}>
                 <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center text-white shadow-sm shadow-teal-200 dark:shadow-none transition-transform group-hover:scale-105 group-active:scale-95">
                 <Layout size={18} />
                 </div>
@@ -90,18 +106,19 @@ const AppContent: React.FC = () => {
 
             {/* Desktop Nav Links */}
             <nav className="hidden md:flex items-center gap-1">
-                <NavLink label="Home" active={activeView === View.HOME} onClick={() => setActiveView(View.HOME)} />
-                <NavLink label="Assistant" active={activeView === View.ASSISTANT} onClick={() => setActiveView(View.ASSISTANT)} />
-                <NavLink label="Insights" active={activeView === View.INSIGHTS} onClick={() => setActiveView(View.INSIGHTS)} />
-                <NavLink label="Goals" active={activeView === View.GOALS} onClick={() => setActiveView(View.GOALS)} />
-                <NavLink label="Mind" active={activeView === View.MIND || activeView === View.CONNECT} onClick={() => setActiveView(View.MIND)} />
-                <NavLink label="Profile" active={activeView === View.PROFILE} onClick={() => setActiveView(View.PROFILE)} />
+                <NavLink label="Home" active={activeView === View.HOME} onClick={() => handleNav(View.HOME)} />
+                <NavLink label="Assistant" active={activeView === View.ASSISTANT} onClick={() => handleNav(View.ASSISTANT)} />
+                <NavLink label="Insights" active={activeView === View.INSIGHTS} onClick={() => handleNav(View.INSIGHTS)} />
+                <NavLink label="Twin" active={activeView === View.SIMULATOR} onClick={() => handleNav(View.SIMULATOR)} />
+                <NavLink label="Goals" active={activeView === View.GOALS} onClick={() => handleNav(View.GOALS)} />
+                <NavLink label="Mind" active={activeView === View.MIND || activeView === View.CONNECT} onClick={() => handleNav(View.MIND)} />
+                <NavLink label="Profile" active={activeView === View.PROFILE} onClick={() => handleNav(View.PROFILE)} />
             </nav>
 
             {/* Action Button */}
             <div className="flex items-center gap-3">
                 <button 
-                    onClick={() => handleProtectedAction(() => setActiveView(View.LOG))}
+                    onClick={() => handleProtectedAction(() => handleNav(View.LOG))}
                     className="group flex items-center gap-2 bg-slate-800 dark:bg-white hover:bg-slate-700 dark:hover:bg-slate-100 text-white dark:text-slate-900 px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl transition-all duration-300 ease-calm shadow-md shadow-slate-200 dark:shadow-none active:scale-95 hover:shadow-lg"
                 >
                     <PlusCircle size={18} className="text-teal-400 dark:text-teal-600 group-hover:text-teal-300 dark:group-hover:text-teal-500 transition-colors" />
@@ -111,7 +128,7 @@ const AppContent: React.FC = () => {
                 
                 {/* Desktop Avatar Preview */}
                 <button 
-                    onClick={() => setActiveView(View.PROFILE)}
+                    onClick={() => handleNav(View.PROFILE)}
                     className="hidden md:flex w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-800 hover:ring-4 hover:ring-slate-100 dark:hover:ring-slate-800/50 transition-all items-center justify-center overflow-hidden active:scale-95"
                 >
                     {user && user.avatar ? (
@@ -135,10 +152,10 @@ const AppContent: React.FC = () => {
         {/* Mobile Bottom Nav (Visible only on small screens) */}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 z-50 pb-safe transition-transform duration-300">
             <div className="flex justify-around items-center h-16 px-2">
-                <MobileIcon icon={<Home size={20} />} label="Home" isActive={activeView === View.HOME} onClick={() => setActiveView(View.HOME)} />
-                <MobileIcon icon={<Compass size={20} />} label="Goals" isActive={activeView === View.GOALS} onClick={() => setActiveView(View.GOALS)} />
-                <MobileIcon icon={<MessageCircle size={20} />} label="Chat" isActive={activeView === View.ASSISTANT} onClick={() => setActiveView(View.ASSISTANT)} />
-                <MobileIcon icon={<Brain size={20} />} label="Mind" isActive={activeView === View.MIND || activeView === View.CONNECT} onClick={() => setActiveView(View.MIND)} />
+                <MobileIcon icon={<Home size={20} />} label="Home" isActive={activeView === View.HOME} onClick={() => handleNav(View.HOME)} />
+                <MobileIcon icon={<Waves size={20} />} label="Twin" isActive={activeView === View.SIMULATOR} onClick={() => handleNav(View.SIMULATOR)} />
+                <MobileIcon icon={<MessageCircle size={20} />} label="Chat" isActive={activeView === View.ASSISTANT} onClick={() => handleNav(View.ASSISTANT)} />
+                <MobileIcon icon={<Brain size={20} />} label="Mind" isActive={activeView === View.MIND || activeView === View.CONNECT} onClick={() => handleNav(View.MIND)} />
                 <MobileIcon 
                     icon={
                         user?.avatar ? 
@@ -147,7 +164,7 @@ const AppContent: React.FC = () => {
                     } 
                     label={user ? "Me" : "Sign In"} 
                     isActive={activeView === View.PROFILE} 
-                    onClick={() => setActiveView(View.PROFILE)} 
+                    onClick={() => handleNav(View.PROFILE)} 
                 />
             </div>
         </nav>

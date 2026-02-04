@@ -151,6 +151,7 @@ export const generateSpeech = async (text: string) => {
  */
 export const transcribeAudio = async (base64Audio: string, mimeType: string) => {
   if (!ai) throw new Error("AI not configured");
+  if (!base64Audio) return "No audio captured."; // Guard against empty input
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
@@ -293,15 +294,15 @@ export const generateDailyInsight = async (logs: any[]): Promise<{ title: string
     const prompt = `
       Analyze these recent anonymous wellbeing logs: ${JSON.stringify(logs.slice(-5))}
       
-      Task: Generate a "Daily Insight" card content based on patterns in Sleep, Mood, and Hydration.
+      Task: Analyze the user's sleep duration consistency.
       
       Rules:
-      1. Tone: Calm, observational, non-judgmental. A gentle nudge.
-      2. No alarmist language or "red alerts". No clinical terms like 'insomnia', 'depression'.
+      1. Tone: Calm, observational, non-judgmental.
+      2. Focus: Identify if sleep duration is stable or erratic and how it might correlate with mood (if visible).
       3. Format: JSON with:
-         - "title" (Short & engaging, 2-5 words)
-         - "body" (Exactly two sentences: 1. Observation of a pattern. 2. A gentle, optional suggestion.)
-      4. Example Body: "Your energy tends to be higher when you sleep more than 7 hours. Prioritizing rest tonight might help you feel balanced tomorrow."
+         - "title" (Short & engaging, e.g. "Sleep Rhythm")
+         - "body" (Exactly two sentences: 1. Observation of the sleep pattern. 2. A gentle suggestion related to consistency.)
+      4. Avoid clinical terms.
     `;
 
     const response = await ai.models.generateContent({

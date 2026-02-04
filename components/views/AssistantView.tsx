@@ -142,9 +142,13 @@ export const AssistantView: React.FC<AssistantViewProps> = ({ onChangeView }) =>
                     onChangeView(args.view as View);
                     
                     // Prepare response for the model
+                    // FIXED: Wrap in functionResponse to form a valid Part
                     functionResponses.push({
-                        name: call.name,
-                        response: { success: true, message: `Navigated user to ${args.view}` }
+                        functionResponse: {
+                            name: call.name,
+                            id: call.id,
+                            response: { success: true, message: `Navigated user to ${args.view}` }
+                        }
                     });
 
                     // Add a system message to chat to inform user (optional, but good UX)
@@ -216,10 +220,16 @@ export const AssistantView: React.FC<AssistantViewProps> = ({ onChangeView }) =>
                   reader.readAsDataURL(blob);
                   reader.onloadend = async () => {
                       const base64 = (reader.result as string).split(',')[1];
+                      if (!base64) return;
                       setIsLoading(true);
-                      const text = await transcribeAudio(base64, 'audio/webm');
-                      setInput(prev => prev + " " + text);
-                      setIsLoading(false);
+                      try {
+                        const text = await transcribeAudio(base64, 'audio/webm');
+                        setInput(prev => prev + " " + text);
+                      } catch(err) {
+                        console.error(err);
+                      } finally {
+                        setIsLoading(false);
+                      }
                   };
               };
               recorder.start();

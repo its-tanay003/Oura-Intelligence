@@ -1,9 +1,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { Card, SectionHeader, EmptyState } from '../Shared';
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area } from 'recharts';
 import { generateDailyInsight } from '../../services/geminiService';
-import { Sparkles, Calendar, Loader2 } from 'lucide-react';
+import { Sparkles, Calendar, Loader2, Droplets, PenTool } from 'lucide-react';
 import { View, Emotion, DailyLog } from '../../types';
 import { useTheme } from '../ThemeContext';
 
@@ -20,7 +20,8 @@ const mockLogs: DailyLog[] = [
 
 const chartData = mockLogs.map(log => ({
     day: log.date,
-    score: Math.min(100, (log.sleepHours / 9) * 60 + (log.hydration / 8) * 20 + ((6 - log.stressLevel) / 5) * 20)
+    score: Math.min(100, (log.sleepHours / 9) * 60 + (log.hydration / 8) * 20 + ((6 - log.stressLevel) / 5) * 20),
+    hydration: log.hydration
 }));
 
 interface InsightsViewProps {
@@ -59,11 +60,11 @@ export const InsightsView: React.FC<InsightsViewProps> = ({ onChangeView }) => {
         <div className="pb-12 animate-fade-in space-y-6 md:space-y-8 max-w-4xl mx-auto">
             <SectionHeader title="Insights" subtitle="Patterns appear over time." />
             <EmptyState 
-                title="Gathering Data"
-                message="We need about 3 days of logs to start finding meaningful connections between your sleep and energy."
+                title="Begin Your Rhythm"
+                message="Your insights need just a few more data points to bloom. Log today to help us understand your unique baseline."
                 actionLabel="Log Today"
                 onAction={() => onChangeView(View.LOG)}
-                icon={Calendar}
+                icon={PenTool}
             />
             <Card variant="flat" className="text-center py-6">
                  <p className="text-sm text-slate-400">
@@ -150,6 +151,55 @@ export const InsightsView: React.FC<InsightsViewProps> = ({ onChangeView }) => {
             </p>
         </section>
       </div>
+
+       {/* Hydration Chart */}
+       <section className="bg-white dark:bg-slate-900 p-5 md:p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm mt-6">
+            <div className="mb-6 flex items-center justify-between">
+                <h3 className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-wider">Hydration Flow</h3>
+                <div className="flex items-center gap-2 text-blue-500">
+                    <Droplets size={16} />
+                    <span className="text-xs font-medium">Glasses</span>
+                </div>
+            </div>
+            <div className="h-48 md:h-56 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData}>
+                        <defs>
+                            <linearGradient id="colorHydration" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                            </linearGradient>
+                        </defs>
+                        <XAxis 
+                            dataKey="day" 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{fill: theme === 'dark' ? '#94a3b8' : '#94a3b8', fontSize: 13}} 
+                            dy={10}
+                        />
+                        <Tooltip 
+                            cursor={{stroke: theme === 'dark' ? '#334155' : '#e2e8f0', strokeWidth: 2}}
+                            contentStyle={{
+                                borderRadius: '12px', 
+                                border: 'none', 
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)', 
+                                padding: '8px 12px',
+                                backgroundColor: theme === 'dark' ? '#1e293b' : '#fff',
+                                color: theme === 'dark' ? '#f1f5f9' : '#1e293b'
+                            }}
+                        />
+                        <Area 
+                            type="monotone" 
+                            dataKey="hydration" 
+                            stroke="#3b82f6" 
+                            strokeWidth={3}
+                            fillOpacity={1} 
+                            fill="url(#colorHydration)" 
+                        />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </div>
+        </section>
       
       <Card variant="flat" className="text-center py-6 md:py-8 bg-slate-50/50 dark:bg-slate-900/50">
           <p className="text-sm md:text-base text-slate-500 italic">
