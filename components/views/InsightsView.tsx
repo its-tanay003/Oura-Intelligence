@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, SectionHeader, EmptyState } from '../Shared';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { generateDailyInsight } from '../../services/geminiService';
-import { Sparkles, Calendar } from 'lucide-react';
+import { Sparkles, Calendar, Loader2 } from 'lucide-react';
 import { View, Emotion, DailyLog } from '../../types';
 import { useTheme } from '../ThemeContext';
 
@@ -29,16 +29,27 @@ interface InsightsViewProps {
 
 export const InsightsView: React.FC<InsightsViewProps> = ({ onChangeView }) => {
   const [insight, setInsight] = useState<{title: string, body: string} | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const { theme } = useTheme();
 
   useEffect(() => {
     // Fetch insights using Gemini
     if (mockLogs.length > 0) {
         const fetchInsight = async () => {
-            const result = await generateDailyInsight(mockLogs);
-            setInsight(result);
+            setIsLoading(true);
+            try {
+                const result = await generateDailyInsight(mockLogs);
+                setInsight(result);
+            } catch (e) {
+                // Fallback handled in service, but safety check here
+                setInsight({ title: "Noticing Patterns", body: "We're gathering more data to find your rhythm." });
+            } finally {
+                setIsLoading(false);
+            }
         };
         fetchInsight();
+    } else {
+        setIsLoading(false);
     }
   }, []);
 
@@ -71,13 +82,27 @@ export const InsightsView: React.FC<InsightsViewProps> = ({ onChangeView }) => {
         {/* AI Insight Section */}
         <div className="md:col-span-1">
             <Card variant="highlight" className="border-l-4 border-l-teal-400 dark:border-l-teal-500 h-full p-5 md:p-6 bg-teal-50/50 dark:bg-teal-900/20">
-                <div className="flex gap-3 mb-3 md:mb-4">
-                    <Sparkles size={20} className="text-teal-600 dark:text-teal-400 mt-0.5 shrink-0" />
-                    <h3 className="font-medium text-slate-800 dark:text-slate-100 text-lg">{insight ? insight.title : "Noticing Patterns..."}</h3>
+                <div className="flex gap-3 mb-3 md:mb-4 items-center">
+                    <Sparkles size={20} className="text-teal-600 dark:text-teal-400 shrink-0" />
+                    {isLoading ? (
+                        <div className="h-6 w-32 bg-teal-200/50 dark:bg-teal-800/50 rounded animate-pulse" />
+                    ) : (
+                        <h3 className="font-medium text-slate-800 dark:text-slate-100 text-lg leading-tight">
+                            {insight?.title || "Noticing Patterns..."}
+                        </h3>
+                    )}
                 </div>
-                <p className="text-slate-600 dark:text-slate-300 text-sm md:text-base leading-relaxed">
-                    {insight ? insight.body : "Looking at your recent rest and rhythm to find helpful connections."}
-                </p>
+                {isLoading ? (
+                    <div className="space-y-2 mt-4">
+                        <div className="h-4 w-full bg-teal-200/50 dark:bg-teal-800/50 rounded animate-pulse" />
+                        <div className="h-4 w-5/6 bg-teal-200/50 dark:bg-teal-800/50 rounded animate-pulse" />
+                        <div className="h-4 w-4/6 bg-teal-200/50 dark:bg-teal-800/50 rounded animate-pulse" />
+                    </div>
+                ) : (
+                    <p className="text-slate-600 dark:text-slate-300 text-sm md:text-base leading-relaxed">
+                        {insight?.body || "Looking at your recent rest and rhythm to find helpful connections."}
+                    </p>
+                )}
             </Card>
         </div>
 

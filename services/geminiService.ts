@@ -24,8 +24,8 @@ const navigationFunction: FunctionDeclaration = {
     properties: {
       view: {
         type: Type.STRING,
-        enum: ['HOME', 'LOG', 'MIND', 'INSIGHTS', 'PROFILE'],
-        description: 'The target view to navigate to.'
+        enum: ['HOME', 'LOG', 'MIND', 'INSIGHTS', 'PROFILE', 'CONNECT', 'GOALS'],
+        description: 'The target view to navigate to. CONNECT is for Trusted Circle. GOALS is for Learning Journeys.'
       },
       reason: {
           type: Type.STRING,
@@ -164,26 +164,102 @@ export const transcribeAudio = async (base64Audio: string, mimeType: string) => 
 };
 
 /**
- * Existing Functions
+ * LEARNING JOURNEYS
+ * Uses gemini-3-flash-preview for structured plan generation.
+ */
+export const generateLearningJourney = async (topic: string): Promise<{ title: string; milestones: { title: string; description: string }[] }> => {
+  if (!ai) return { 
+    title: topic, 
+    milestones: [
+        { title: "Explore Basics", description: "Read an introductory article or watch a video." }, 
+        { title: "First Practice", description: "Try a simple exercise related to the topic." }
+    ] 
+  };
+
+  try {
+    const prompt = `
+      Create a "Learning Journey" for the user interested in: "${topic}".
+      
+      Rules:
+      1. Tone: Encouraging, low-pressure, bite-sized.
+      2. Structure: 3 to 5 clear, actionable milestones.
+      3. Focus: Progressive learning (Start small -> Go deeper).
+      4. Output: JSON with 'title' (inspiring name for the journey) and 'milestones' array (title, description).
+    `;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            milestones: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  title: { type: Type.STRING },
+                  description: { type: Type.STRING }
+                },
+                required: ["title", "description"]
+              }
+            }
+          },
+          required: ["title", "milestones"]
+        }
+      }
+    });
+
+    const text = response.text;
+    if (!text) throw new Error("No response");
+    
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Gemini Error:", error);
+    return { 
+        title: `Journey: ${topic}`, 
+        milestones: [{ title: "Getting Started", description: "Define what you want to learn specifically about this topic." }] 
+    };
+  }
+};
+
+/**
+ * REALITY CHECK / REFRAME
+ * Updated to support structured input (Facts vs Stories)
  */
 
-export const reframeThought = async (record: Omit<ThoughtRecord, 'id' | 'timestamp' | 'reframe'>): Promise<string> => {
+interface RealityCheckInput {
+    emotion: string;
+    intensity: number;
+    story: string; // The Assumption
+    facts: string; // The Reality
+}
+
+export const reframeThought = async (input: RealityCheckInput | Omit<ThoughtRecord, 'id' | 'timestamp' | 'reframe'>): Promise<string> => {
   if (!ai) return handleMissingApi("Let's look at this differently. Is there evidence that supports this thought? Is there evidence against it?");
+
+  // Handle legacy calls or new structured calls
+  const story = 'story' in input ? input.story : (input as any).thought;
+  const facts = 'facts' in input ? input.facts : (input as any).situation;
+  const emotion = input.emotion;
 
   try {
     const prompt = `
       You are a calm, supportive, non-clinical mental health guide. 
-      The user is performing a "reality check" on a thought.
+      The user is performing a "Reality Check" to separate facts from feelings.
       
-      Situation: "${record.situation}"
-      Emotion: "${record.emotion}"
-      Assumption/Thought: "${record.thought}"
+      The Emotion: "${emotion}"
+      The Facts (Camera View): "${facts}"
+      The Story (User's Assumption): "${story}"
 
-      Task: Provide a gentle, grounded reframe. 
-      1. Validate the feeling briefly.
-      2. Ask a checking question or offer a more neutral perspective.
-      3. Separate fact from assumption.
-      4. MAX 2 sentences.
+      Task: Provide a gentle, grounded reframe that bridges the gap between the facts and the story.
+      1. Acknowledge the emotion without reinforcing the negative story.
+      2. Highlight the difference between the 'story' and the 'facts' gently.
+      3. Offer a neutral, grounded perspective.
+      4. MAX 3 sentences. Calm, warm, "human" tone.
       5. NO medical advice. NO "you should".
     `;
 
@@ -191,8 +267,8 @@ export const reframeThought = async (record: Omit<ThoughtRecord, 'id' | 'timesta
       model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
-        maxOutputTokens: 150,
-        temperature: 0.7, 
+        maxOutputTokens: 200,
+        temperature: 0.6, 
       }
     });
 
@@ -208,16 +284,17 @@ export const generateDailyInsight = async (logs: any[]): Promise<{ title: string
 
   try {
     const prompt = `
-      Analyze these recent anonymous wellbeing logs: ${JSON.stringify(logs.slice(-3))}
+      Analyze these recent anonymous wellbeing logs: ${JSON.stringify(logs.slice(-5))}
       
-      Generate a "Daily Insight" card.
+      Task: Generate a "Daily Insight" card content based on patterns in Sleep, Mood, and Hydration.
+      
       Rules:
-      1. Tone: Calm, observational, non-judgmental.
-      2. No alarmist language or "red alerts".
-      3. Format: JSON with "title" (short) and "body" (1 sentence explanation + 1 gentle suggestion).
-      4. If data is scarce, encourage small steps.
-      5. STRICT SAFETY: Do NOT use clinical terms like 'recovery score', 'optimal', 'symptoms', 'diagnosis'. 
-      6. Use metaphors like 'balance', 'rhythm', 'energy', 'rest pattern'.
+      1. Tone: Calm, observational, non-judgmental. A gentle nudge.
+      2. No alarmist language or "red alerts". No clinical terms like 'insomnia', 'depression'.
+      3. Format: JSON with:
+         - "title" (Short & engaging, 2-5 words)
+         - "body" (Exactly two sentences: 1. Observation of a pattern. 2. A gentle, optional suggestion.)
+      4. Example Body: "Your energy tends to be higher when you sleep more than 7 hours. Prioritizing rest tonight might help you feel balanced tomorrow."
     `;
 
     const response = await ai.models.generateContent({

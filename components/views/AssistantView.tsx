@@ -4,7 +4,7 @@ import { Card, Button, SectionHeader } from '../Shared';
 import { ai, createChat, sendMessage, generateImage, generateSpeech, transcribeAudio } from '../../services/geminiService';
 import { LiveServerMessage, Modality } from '@google/genai';
 import { Mic, Send, Image as ImageIcon, Sparkles, Volume2, Globe, Brain, StopCircle, X, Loader2, Radio } from 'lucide-react';
-import { View } from '../../types';
+import { View, UserProfile, Goal } from '../../types';
 
 interface Message {
   id: string;
@@ -37,10 +37,69 @@ export const AssistantView: React.FC<AssistantViewProps> = ({ onChangeView }) =>
   const chatRef = useRef<any>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
-  // Initialize Chat
+  // Initialize Chat with Context
   useEffect(() => {
     if (!chatRef.current) {
-      chatRef.current = createChat("You are a supportive, calm, and intelligent assistant focused on mental wellbeing and clarity. You can navigate the user to different parts of the app (Log, Mind, Insights, Profile, Home) if they express a desire to do so (e.g. 'I want to log sleep', 'Help me breathe', 'Show my stats'). Keep answers concise unless asked to elaborate.");
+      // 1. User Profile Context
+      const savedProfile = localStorage.getItem('oura_profile');
+      let contextString = "User Profile: Not set.";
+      if (savedProfile) {
+          try {
+              const p: UserProfile = JSON.parse(savedProfile);
+              contextString = `User Profile Context:
+              - Name: ${p.name}
+              - Work Rhythm: ${p.workType}
+              - Recent Stress Level: ${p.workStress}/100
+              - Privacy Settings: ${p.privacy.shareWorkContext ? 'Work Context Shared' : 'Work Context Hidden'}.`;
+          } catch (e) { }
+      }
+
+      // 2. Active Goals/Journeys Context
+      const savedGoals = localStorage.getItem('oura_goals');
+      let goalsContext = "";
+      let activeGoalTitle = "my goal";
+      
+      if (savedGoals) {
+          try {
+              const goals: Goal[] = JSON.parse(savedGoals);
+              const active = goals.filter(g => g.active && g.type === 'learning');
+              if (active.length > 0) {
+                   goalsContext = `Active Learning Journeys:\n${active.map(g => `- ${g.title} (${g.progress}% complete)`).join('\n')}`;
+                   activeGoalTitle = active[0].title;
+              }
+          } catch (e) { }
+      }
+
+      // 3. Enhanced System Instruction for Intent Analysis
+      const systemPrompt = `
+      You are a supportive, calm, and intelligent assistant focused on mental wellbeing and clarity.
+      
+      CONTEXT:
+      ${contextString}
+      ${goalsContext}
+
+      INTENT RECOGNITION & CAPABILITIES:
+      1. NAVIGATE: Analyze user text for intents to access specific features. Use the 'navigate' tool.
+         - "I need to log my sleep" or "track mood" -> navigate(LOG)
+         - "Help me relax" or "I'm stressed" -> navigate(MIND)
+         - "How have I been doing lately?" -> navigate(INSIGHTS)
+         - "I want to work on my learning journey" or "Check my progress on ${activeGoalTitle}" -> navigate(GOALS)
+         - "I feel lonely" or "Call my trusted contact" -> navigate(CONNECT)
+      
+      2. COACH: Provide tailored advice based on their Profile and Goals.
+         - If they are a Shift Worker, acknowledge schedule challenges.
+         - If they have active Learning Journeys, encourage small next steps on their milestones.
+      
+      3. CONNECT: If the user expresses high stress, anxiety, overwhelm, or loneliness, gently suggest navigating to the 'CONNECT' view (Trusted Circle).
+
+      GUIDELINES:
+      - Keep answers concise unless asked to elaborate.
+      - Never diagnose.
+      - Never claim to be a doctor.
+      - If crisis is detected, suggest human connection via the Connect tool or professional help.
+      `;
+
+      chatRef.current = createChat(systemPrompt);
     }
   }, []);
 
@@ -92,7 +151,7 @@ export const AssistantView: React.FC<AssistantViewProps> = ({ onChangeView }) =>
                     setMessages(prev => [...prev, { 
                         id: Date.now().toString(), 
                         role: 'model', 
-                        text: `*Navigating to ${args.view}...*` 
+                        text: `*Opening ${args.view === 'CONNECT' ? 'Trusted Circle' : args.view}...*` 
                     }]);
                 }
             }

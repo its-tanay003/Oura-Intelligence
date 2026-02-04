@@ -7,9 +7,10 @@ import { MindView } from './components/views/MindView';
 import { InsightsView } from './components/views/InsightsView';
 import { ProfileView } from './components/views/ProfileView';
 import { AssistantView } from './components/views/AssistantView';
+import { GoalsView } from './components/views/GoalsView';
 import { AuthModal } from './components/auth/AuthComponents';
 import { getSession, logout } from './services/authService';
-import { Home, PlusCircle, Brain, BarChart2, User as UserIcon, Layout, MessageCircle } from 'lucide-react';
+import { Home, PlusCircle, Brain, BarChart2, User as UserIcon, Layout, MessageCircle, Compass } from 'lucide-react';
 import { MotionProvider, PageTransition } from './components/Motion';
 import { ThemeProvider, useTheme } from './components/ThemeContext';
 
@@ -49,7 +50,9 @@ const AppContent: React.FC = () => {
     switch (activeView) {
       case View.HOME: return <HomeView onChangeView={setActiveView} />;
       case View.LOG: return <LogView />;
-      case View.MIND: return <MindView />;
+      case View.MIND: return <MindView initialMode="MENU" />;
+      case View.CONNECT: return <MindView initialMode="CONNECT" />;
+      case View.GOALS: return <GoalsView />;
       case View.INSIGHTS: return <InsightsView onChangeView={setActiveView} />;
       case View.PROFILE: return (
         <ProfileView 
@@ -90,7 +93,8 @@ const AppContent: React.FC = () => {
                 <NavLink label="Home" active={activeView === View.HOME} onClick={() => setActiveView(View.HOME)} />
                 <NavLink label="Assistant" active={activeView === View.ASSISTANT} onClick={() => setActiveView(View.ASSISTANT)} />
                 <NavLink label="Insights" active={activeView === View.INSIGHTS} onClick={() => setActiveView(View.INSIGHTS)} />
-                <NavLink label="Mind" active={activeView === View.MIND} onClick={() => setActiveView(View.MIND)} />
+                <NavLink label="Goals" active={activeView === View.GOALS} onClick={() => setActiveView(View.GOALS)} />
+                <NavLink label="Mind" active={activeView === View.MIND || activeView === View.CONNECT} onClick={() => setActiveView(View.MIND)} />
                 <NavLink label="Profile" active={activeView === View.PROFILE} onClick={() => setActiveView(View.PROFILE)} />
             </nav>
 
@@ -132,8 +136,9 @@ const AppContent: React.FC = () => {
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 z-50 pb-safe transition-transform duration-300">
             <div className="flex justify-around items-center h-16 px-2">
                 <MobileIcon icon={<Home size={20} />} label="Home" isActive={activeView === View.HOME} onClick={() => setActiveView(View.HOME)} />
+                <MobileIcon icon={<Compass size={20} />} label="Goals" isActive={activeView === View.GOALS} onClick={() => setActiveView(View.GOALS)} />
                 <MobileIcon icon={<MessageCircle size={20} />} label="Chat" isActive={activeView === View.ASSISTANT} onClick={() => setActiveView(View.ASSISTANT)} />
-                <MobileIcon icon={<Brain size={20} />} label="Mind" isActive={activeView === View.MIND} onClick={() => setActiveView(View.MIND)} />
+                <MobileIcon icon={<Brain size={20} />} label="Mind" isActive={activeView === View.MIND || activeView === View.CONNECT} onClick={() => setActiveView(View.MIND)} />
                 <MobileIcon 
                     icon={
                         user?.avatar ? 

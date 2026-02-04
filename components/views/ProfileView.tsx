@@ -28,35 +28,45 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLoginSuccess, 
   }
 
   // --- MOCK INITIAL STATE (Ideally fetched from backend using user.id) ---
-  const [profile, setProfile] = useState<UserProfile>({
-    name: user.name || 'Explorer',
-    email: user.email,
-    pronouns: '',
-    region: 'North America',
-    dateOfBirth: '',
-    workType: 'Remote',
-    workSchedule: 'Flexible',
-    screenTime: 'High',
-    physicalActivity: 'Low',
-    workStress: 40,
-    notifications: 'Quiet',
-    privacy: {
-      aiPersonalization: true,
-      analytics: false,
-      visibleToResearchers: false,
-      shareWorkContext: true,
-      shareDailyLogs: true,
-      shareJournalEntries: false,
-    }
+  const [profile, setProfile] = useState<UserProfile>(() => {
+    const saved = localStorage.getItem('oura_profile');
+    return saved ? JSON.parse(saved) : {
+        name: user.name || 'Explorer',
+        email: user.email,
+        pronouns: '',
+        region: 'North America',
+        dateOfBirth: '',
+        workType: 'Remote',
+        workSchedule: 'Flexible',
+        screenTime: 'High',
+        physicalActivity: 'Low',
+        workStress: 40,
+        notifications: 'Quiet',
+        privacy: {
+          aiPersonalization: true,
+          analytics: false,
+          visibleToResearchers: false,
+          shareWorkContext: true,
+          shareDailyLogs: true,
+          shareJournalEntries: false,
+        }
+    };
   });
 
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
+  useEffect(() => {
+     if (!hasChanges) {
+         localStorage.setItem('oura_profile', JSON.stringify(profile));
+     }
+  }, [profile, hasChanges]);
+
   const handleSave = () => {
     setIsSaving(true);
     // Simulate API call
     setTimeout(() => {
+      localStorage.setItem('oura_profile', JSON.stringify(profile));
       setIsSaving(false);
       setHasChanges(false);
     }, 800);

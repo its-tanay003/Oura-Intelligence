@@ -6,7 +6,8 @@ export enum View {
   MIND = 'MIND',
   GOALS = 'GOALS',
   PROFILE = 'PROFILE',
-  ASSISTANT = 'ASSISTANT'
+  ASSISTANT = 'ASSISTANT',
+  CONNECT = 'CONNECT'
 }
 
 export enum Emotion {
@@ -78,10 +79,33 @@ export interface ThoughtRecord {
   reframe?: string; // AI generated or user generated
 }
 
+export interface Milestone {
+  id: string;
+  title: string;
+  description?: string;
+  isCompleted: boolean;
+}
+
 export interface Goal {
   id: string;
   title: string;
-  type: 'experiment' | 'habit';
+  type: 'experiment' | 'habit' | 'learning';
   active: boolean;
   progress: number; // 0-100 abstract
+  milestones?: Milestone[];
+  notes?: string;
+  createdAt?: string;
+  
+  // For Habits/Experiments
+  currentValue?: number;
+  targetValue?: number;
+  unit?: string; // e.g., 'days', 'sessions'
+}
+
+export interface TrustedContact {
+  id: string;
+  name: string;
+  relationship: string;
+  phone: string;
+  method: 'call' | 'message';
 }
