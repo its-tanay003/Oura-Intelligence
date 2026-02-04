@@ -2,17 +2,57 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, SectionHeader, VoiceInput, EmptyState, Input } from '../Shared';
 import { generateLearningJourney } from '../../services/geminiService';
-import { Compass, CheckCircle, Circle, Plus, ChevronDown, ChevronUp, Loader2, Sparkles, X, Target, Zap, Beaker, Minus, Trash2, Repeat } from 'lucide-react';
+import { Compass, CheckCircle, Circle, Plus, ChevronDown, ChevronUp, Loader2, Sparkles, X, Target, Zap, Beaker, Minus, Trash2, Repeat, ExternalLink, CalendarDays, Check } from 'lucide-react';
 import { Goal, Milestone } from '../../types';
 import { FadeIn } from '../Motion';
 
 type CreateStep = 'TYPE_SELECT' | 'INPUT_LEARNING' | 'INPUT_HABIT' | 'GENERATING' | 'REVIEW';
 
+// Helper to get ISO date string for X days ago
+const getDateKey = (daysAgo: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - daysAgo);
+    return d.toISOString().split('T')[0];
+};
+
 export const GoalsView: React.FC = () => {
   // --- STATE ---
   const [goals, setGoals] = useState<Goal[]>(() => {
     const saved = localStorage.getItem('oura_goals');
-    return saved ? JSON.parse(saved) : [];
+    if (saved) return JSON.parse(saved);
+
+    // Initial Seed Data if empty
+    return [
+        {
+            id: 'habit-seed-1',
+            title: 'Meditate Daily',
+            type: 'habit',
+            active: true,
+            progress: 66,
+            currentValue: 0,
+            targetValue: 5,
+            unit: 'min',
+            createdAt: new Date().toISOString(),
+            history: {
+                [getDateKey(0)]: false,
+                [getDateKey(1)]: true,
+                [getDateKey(2)]: true
+            }
+        },
+        {
+            id: 'learning-seed-1',
+            title: 'Mindful Eating',
+            type: 'learning',
+            active: true,
+            progress: 0,
+            createdAt: new Date().toISOString(),
+            milestones: [
+                { id: 'm1', title: 'The Raisin Exercise', description: 'Experience eating a single raisin with full sensory attention.', isCompleted: false, searchQuery: 'mindful eating raisin exercise guide' },
+                { id: 'm2', title: 'Identify Hunger Cues', description: 'Learn to distinguish between physical hunger and emotional cravings.', isCompleted: false, searchQuery: 'physical vs emotional hunger cues' },
+                { id: 'm3', title: 'The 20-Minute Meal', description: 'Practice pacing a meal to last at least 20 minutes to aid digestion.', isCompleted: false, searchQuery: 'slow eating benefits digestion' }
+            ]
+        }
+    ];
   });
 
   const [isCreating, setIsCreating] = useState(false);
@@ -57,6 +97,7 @@ export const GoalsView: React.FC = () => {
             id: `ms-${Date.now()}-${i}`,
             title: m.title,
             description: m.description,
+            searchQuery: m.searchQuery, // Capture generated search query
             isCompleted: false
         }))
     };
@@ -78,7 +119,8 @@ export const GoalsView: React.FC = () => {
           createdAt: new Date().toISOString(),
           currentValue: 0,
           targetValue: habitTarget,
-          unit: habitUnit
+          unit: habitUnit,
+          history: {}
       };
 
       setGoals([newGoal, ...goals]);
@@ -116,9 +158,26 @@ export const GoalsView: React.FC = () => {
         if (g.id !== id) return g;
         const current = Math.max(0, (g.currentValue || 0) + increment);
         const target = g.targetValue || 1;
+        // For simple Habits, tracking history is preferred, but we keep currentValue for counter-style habits
         const progress = Math.min(100, Math.round((current / target) * 100));
         return { ...g, currentValue: current, progress };
     }));
+  };
+
+  // Toggle history for a specific date (YYYY-MM-DD)
+  const toggleHabitHistory = (goalId: string, dateKey: string) => {
+      setGoals(prev => prev.map(g => {
+          if (g.id !== goalId) return g;
+          
+          const newHistory = { ...(g.history || {}) };
+          newHistory[dateKey] = !newHistory[dateKey];
+          
+          // Recalculate 'progress' based on simple "did I do it today?" logic for the UI bar
+          // Or strictly visual. Let's keep 'progress' as the manual counter for now, 
+          // or derive it from today's status if it's a boolean habit.
+          
+          return { ...g, history: newHistory };
+      }));
   };
 
   const deleteGoal = (id: string) => {
@@ -329,6 +388,7 @@ export const GoalsView: React.FC = () => {
                     goal={goal} 
                     onToggleMilestone={toggleMilestone} 
                     onUpdateValue={updateGoalValue}
+                    onToggleHistory={toggleHabitHistory}
                     onDelete={deleteGoal}
                   />
               ))}
@@ -344,8 +404,9 @@ const GoalCard: React.FC<{
     goal: Goal; 
     onToggleMilestone: (gid: string, mid: string) => void;
     onUpdateValue: (gid: string, val: number) => void;
+    onToggleHistory: (gid: string, date: string) => void;
     onDelete: (id: string) => void;
-}> = ({ goal, onToggleMilestone, onUpdateValue, onDelete }) => {
+}> = ({ goal, onToggleMilestone, onUpdateValue, onToggleHistory, onDelete }) => {
     const [expanded, setExpanded] = useState(false);
     
     const isComplete = goal.progress === 100;
@@ -376,6 +437,13 @@ const GoalCard: React.FC<{
 
     // Calculate Next Step for Learning
     const nextMilestone = goal.milestones?.find(m => !m.isCompleted);
+    
+    // Days to show in tracking (Last 3 Days)
+    const trackingDays = [2, 1, 0].map(daysAgo => {
+        const date = getDateKey(daysAgo);
+        const label = daysAgo === 0 ? 'Today' : daysAgo === 1 ? 'Yesterday' : new Date(date).toLocaleDateString('en-US', { weekday: 'short' });
+        return { date, label, done: !!goal.history?.[date] };
+    });
 
     return (
         <Card className={`transition-all duration-500 ${isComplete ? 'opacity-75' : ''}`}>
@@ -386,9 +454,17 @@ const GoalCard: React.FC<{
                         {isComplete ? <CheckCircle size={24} /> : getIcon()}
                     </div>
                     <div className="flex-1">
-                        <h3 className={`text-lg font-medium text-slate-800 dark:text-slate-100 ${isComplete ? 'line-through text-slate-400' : ''}`}>
-                            {goal.title}
-                        </h3>
+                        <div className="flex items-center gap-2">
+                             <h3 className={`text-lg font-medium text-slate-800 dark:text-slate-100 ${isComplete ? 'line-through text-slate-400' : ''}`}>
+                                {goal.title}
+                            </h3>
+                            {isHabit && (
+                                <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-500 px-2 py-0.5 rounded-full">
+                                    {goal.targetValue} {goal.unit}/day
+                                </span>
+                            )}
+                        </div>
+                       
                         
                         <div className="mt-2">
                              {/* Learning Progress: Segmented Bar */}
@@ -403,19 +479,29 @@ const GoalCard: React.FC<{
                                 </div>
                             )}
 
-                             {/* Habit/Experiment Progress: Linear Bar + Text */}
+                             {/* Habit/Experiment Progress */}
                             {(isHabit || isExperiment) && (
-                                <div className="flex items-center gap-3">
-                                    <div className="h-1.5 w-24 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                        <div 
-                                            className={`h-full transition-all duration-500 ${getProgressColor()}`} 
-                                            style={{ width: `${goal.progress}%` }}
-                                        />
-                                    </div>
-                                    <span className="text-xs text-slate-400 font-medium">
-                                        {goal.currentValue || 0} / {goal.targetValue || '?'} {goal.unit || 'units'}
-                                    </span>
-                                </div>
+                                 <div className="flex gap-3 mt-1">
+                                    {trackingDays.map((day) => (
+                                        <button
+                                            key={day.date}
+                                            onClick={(e) => { e.stopPropagation(); onToggleHistory(goal.id, day.date); }}
+                                            className={`flex flex-col items-center gap-1 group`}
+                                            title={`Toggle ${day.label}`}
+                                        >
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
+                                                day.done 
+                                                    ? `border-amber-400 bg-amber-400 dark:border-amber-500 dark:bg-amber-500 text-white` 
+                                                    : `border-slate-200 dark:border-slate-700 bg-transparent text-transparent hover:border-amber-300`
+                                            }`}>
+                                                <Check size={14} className={day.done ? 'scale-100' : 'scale-0'} />
+                                            </div>
+                                            <span className="text-[10px] font-medium text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors uppercase tracking-wider">
+                                                {day.label.slice(0, 3)}
+                                            </span>
+                                        </button>
+                                    ))}
+                                 </div>
                             )}
                         </div>
                         
@@ -428,23 +514,8 @@ const GoalCard: React.FC<{
                     </div>
                 </div>
 
-                {/* Quick Actions for Habits/Experiments */}
-                {(isHabit || isExperiment) && !isComplete && (
-                     <div className="flex items-center gap-2 ml-2">
-                        <button 
-                            onClick={() => onUpdateValue(goal.id, -1)}
-                            className="p-2 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors active:scale-95"
-                        >
-                            <Minus size={18} />
-                        </button>
-                        <button 
-                            onClick={() => onUpdateValue(goal.id, 1)}
-                            className={`p-2 rounded-full transition-colors text-white active:scale-95 ${getProgressColor()}`}
-                        >
-                            <Plus size={18} />
-                        </button>
-                     </div>
-                )}
+                {/* Quick Actions for Habits/Experiments (Legacy Counters) */}
+                {/* Removed in favor of 3-day history bubbles for visual clarity */}
                 
                 {/* Expand Toggle */}
                 {isLearning && (
@@ -475,7 +546,7 @@ const GoalCard: React.FC<{
                             <div className={`mt-0.5 transition-colors ${m.isCompleted ? 'text-emerald-500' : 'text-slate-300 group-hover:text-indigo-400'}`}>
                                 {m.isCompleted ? <CheckCircle size={20} /> : <Circle size={20} />}
                             </div>
-                            <div>
+                            <div className="flex-1">
                                 <h4 className={`text-sm font-medium transition-colors ${m.isCompleted ? 'text-slate-400 line-through' : 'text-slate-700 dark:text-slate-200'}`}>
                                     {m.title}
                                 </h4>
@@ -484,27 +555,53 @@ const GoalCard: React.FC<{
                                         {m.description}
                                     </p>
                                 )}
+                                {/* Educational Content Integration */}
+                                {!m.isCompleted && m.searchQuery && (
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            window.open(`https://www.google.com/search?q=${encodeURIComponent(m.searchQuery!)}`, '_blank');
+                                        }}
+                                        className="mt-2 text-xs font-medium text-indigo-500 hover:text-indigo-600 hover:underline flex items-center gap-1"
+                                    >
+                                        <ExternalLink size={12} />
+                                        Explore Topic
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}
                     
-                    {/* Habit Details (Simple) */}
+                    {/* Habit Details */}
                     {(isHabit || isExperiment) && (
-                        <div className="px-1 py-2">
-                             <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400 mb-2">
-                                 <span>Current Progress</span>
-                                 <span className="font-medium text-slate-800 dark:text-slate-200">{goal.progress}%</span>
+                        <div className="px-1 py-2 space-y-4">
+                             <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                                 <CalendarDays size={16} />
+                                 <span>Log History</span>
                              </div>
-                             <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                                <div 
-                                    className={`h-full transition-all duration-500 ${getProgressColor()}`} 
-                                    style={{ width: `${goal.progress}%` }}
-                                />
+                             
+                             <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4 flex justify-between items-center">
+                                 {trackingDays.map((day) => (
+                                     <div key={day.date} className="flex flex-col items-center gap-2">
+                                         <button
+                                            onClick={(e) => { e.stopPropagation(); onToggleHistory(goal.id, day.date); }}
+                                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                                                day.done 
+                                                ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400' 
+                                                : 'bg-white dark:bg-slate-800 text-slate-300 dark:text-slate-600 border border-slate-100 dark:border-slate-700'
+                                            }`}
+                                         >
+                                             {day.done ? <CheckCircle size={20} /> : <Circle size={20} />}
+                                         </button>
+                                         <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{day.label}</span>
+                                     </div>
+                                 ))}
                              </div>
+
                              {isHabit && (
-                                 <div className="mt-4 flex gap-2 text-xs text-slate-400">
+                                 <div className="flex gap-2 text-xs text-slate-400 justify-center">
                                      <Repeat size={14} />
-                                     <span>Resets daily</span>
+                                     <span>Consistency builds clarity.</span>
                                  </div>
                              )}
                         </div>

@@ -1,9 +1,14 @@
 
-import { GoogleGenAI, Type, Chat, Modality, FunctionDeclaration } from "@google/genai";
+import { GoogleGenAI, Type, Chat, Modality, FunctionDeclaration, GenerateContentResponse } from "@google/genai";
 import { ThoughtRecord } from "../types";
 
-// Safety check for API Key
+// Safety check for API Key that works in both Node (process) and Vite/Browser (import.meta)
 const getApiKey = () => {
+    // 1. Check Vite/Modern Browser environment
+    if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_KEY) {
+        return (import.meta as any).env.VITE_API_KEY;
+    }
+    // 2. Check Node/Process environment (Standard Vercel)
     if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
         return process.env.API_KEY;
     }
@@ -43,6 +48,21 @@ const navigationFunction: FunctionDeclaration = {
   }
 };
 
+const coachingFunction: FunctionDeclaration = {
+  name: 'provideCoaching',
+  description: 'Provide a structured coaching card with a specific tip, insight, or micro-action. Use this when you want to highlight a key piece of advice, a grounding quote, or a specific suggestion visually.',
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      title: { type: Type.STRING, description: 'Short, encouraging title for the advice.' },
+      advice: { type: Type.STRING, description: 'The main content of the advice or insight.' },
+      category: { type: Type.STRING, enum: ['REST', 'FOCUS', 'CONNECT', 'GROWTH', 'GROUNDING'], description: 'The domain of the advice.' },
+      actionItem: { type: Type.STRING, description: 'A very short, doable micro-action (optional).' }
+    },
+    required: ['title', 'advice', 'category']
+  }
+};
+
 /**
  * CHAT SERVICE
  * Uses gemini-3-pro-preview for complex reasoning and chat.
@@ -59,19 +79,19 @@ export const createChat = (systemInstruction: string) => {
 };
 
 export const sendMessage = async (
-  chat: Chat, 
+  chat: Chat | null, 
   message: string | any, 
   useThinking: boolean = false, 
   useSearch: boolean = false
-) => {
-  if (!ai) return { text: "Service unavailable." };
+): Promise<GenerateContentResponse> => {
+  if (!ai || !chat) throw new Error("Service unavailable.");
 
   const config: any = {
     temperature: 0.7,
   };
 
   // Configure Tools
-  const tools: any[] = [{ functionDeclarations: [navigationFunction] }];
+  const tools: any[] = [{ functionDeclarations: [navigationFunction, coachingFunction] }];
   
   if (useSearch) {
     tools.push({ googleSearch: {} });
@@ -132,7 +152,7 @@ export const generateSpeech = async (text: string) => {
     model: "gemini-2.5-flash-preview-tts",
     contents: [{ parts: [{ text }] }],
     config: {
-      responseModalities: [Modality.AUDIO],
+      responseModalities: [Modality.AUDIO], 
       speechConfig: {
         voiceConfig: {
           prebuiltVoiceConfig: { voiceName: 'Kore' },
@@ -151,7 +171,7 @@ export const generateSpeech = async (text: string) => {
  */
 export const transcribeAudio = async (base64Audio: string, mimeType: string) => {
   if (!ai) throw new Error("AI not configured");
-  if (!base64Audio) return "No audio captured."; // Guard against empty input
+  if (!base64Audio) return "No audio captured."; 
 
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
@@ -175,12 +195,12 @@ export const transcribeAudio = async (base64Audio: string, mimeType: string) => 
  * LEARNING JOURNEYS
  * Uses gemini-3-flash-preview for structured plan generation.
  */
-export const generateLearningJourney = async (topic: string): Promise<{ title: string; milestones: { title: string; description: string }[] }> => {
+export const generateLearningJourney = async (topic: string): Promise<{ title: string; milestones: { title: string; description: string; searchQuery: string }[] }> => {
   if (!ai) return { 
     title: topic, 
     milestones: [
-        { title: "Explore Basics", description: "Read an introductory article or watch a video." }, 
-        { title: "First Practice", description: "Try a simple exercise related to the topic." }
+        { title: "Explore Basics", description: "Read an introductory article or watch a video.", searchQuery: `${topic} basics introduction` }, 
+        { title: "First Practice", description: "Try a simple exercise related to the topic.", searchQuery: `${topic} beginner exercises` }
     ] 
   };
 
@@ -192,7 +212,8 @@ export const generateLearningJourney = async (topic: string): Promise<{ title: s
       1. Tone: Encouraging, low-pressure, bite-sized.
       2. Structure: 3 to 5 clear, actionable milestones.
       3. Focus: Progressive learning (Start small -> Go deeper).
-      4. Output: JSON with 'title' (inspiring name for the journey) and 'milestones' array (title, description).
+      4. Output: JSON with 'title' (inspiring name for the journey) and 'milestones' array (title, description, searchQuery).
+      5. searchQuery: A specific, effective Google Search query to find educational content for this milestone.
     `;
 
     const response = await ai.models.generateContent({
@@ -210,9 +231,10 @@ export const generateLearningJourney = async (topic: string): Promise<{ title: s
                 type: Type.OBJECT,
                 properties: {
                   title: { type: Type.STRING },
-                  description: { type: Type.STRING }
+                  description: { type: Type.STRING },
+                  searchQuery: { type: Type.STRING }
                 },
-                required: ["title", "description"]
+                required: ["title", "description", "searchQuery"]
               }
             }
           },
@@ -229,16 +251,14 @@ export const generateLearningJourney = async (topic: string): Promise<{ title: s
     console.error("Gemini Error:", error);
     return { 
         title: `Journey: ${topic}`, 
-        milestones: [{ title: "Getting Started", description: "Define what you want to learn specifically about this topic." }] 
+        milestones: [{ title: "Getting Started", description: "Define what you want to learn specifically about this topic.", searchQuery: `${topic} getting started` }] 
     };
   }
 };
 
 /**
  * REALITY CHECK / REFRAME
- * Updated to support structured input (Facts vs Stories)
  */
-
 interface RealityCheckInput {
     emotion: string;
     intensity: number;

@@ -3,19 +3,14 @@ import React, { useEffect, useState } from 'react';
 import { Card, SectionHeader, EmptyState } from '../Shared';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area } from 'recharts';
 import { generateDailyInsight } from '../../services/geminiService';
-import { Sparkles, Calendar, Loader2, Droplets, PenTool } from 'lucide-react';
+import { Sparkles, Calendar, Loader2, Droplets, PenTool, TrendingUp } from 'lucide-react';
 import { View, Emotion, DailyLog } from '../../types';
 import { useTheme } from '../ThemeContext';
 
-// Mock Data for demonstration
+// Mock Data for demonstration - Reduced to trigger Empty State
 const mockLogs: DailyLog[] = [
   { date: 'Mon', sleepHours: 6.5, mood: Emotion.TIRED, hydration: 4, stressLevel: 3 },
   { date: 'Tue', sleepHours: 7.0, mood: Emotion.CALM, hydration: 6, stressLevel: 2 },
-  { date: 'Wed', sleepHours: 8.5, mood: Emotion.ENERGETIC, hydration: 8, stressLevel: 1 },
-  { date: 'Thu', sleepHours: 5.5, mood: Emotion.ANXIOUS, hydration: 3, stressLevel: 4 },
-  { date: 'Fri', sleepHours: 7.5, mood: Emotion.NEUTRAL, hydration: 5, stressLevel: 2 },
-  { date: 'Sat', sleepHours: 9.0, mood: Emotion.CALM, hydration: 7, stressLevel: 1 },
-  { date: 'Sun', sleepHours: 8.0, mood: Emotion.CALM, hydration: 6, stressLevel: 1 },
 ];
 
 const chartData = mockLogs.map(log => ({
@@ -60,11 +55,11 @@ export const InsightsView: React.FC<InsightsViewProps> = ({ onChangeView }) => {
         <div className="pb-12 animate-fade-in space-y-6 md:space-y-8 max-w-4xl mx-auto">
             <SectionHeader title="Insights" subtitle="Patterns appear over time." />
             <EmptyState 
-                title="Begin Your Rhythm"
-                message="Your insights need just a few more data points to bloom. Log today to help us understand your unique baseline."
-                actionLabel="Log Today"
+                title="Your Rhythm is Forming"
+                message="We need just a few more days of data to uncover your personalized patterns. Every log brings you closer to clarity."
+                actionLabel="Log Today's Entry"
                 onAction={() => onChangeView(View.LOG)}
-                icon={PenTool}
+                icon={TrendingUp}
             />
             <Card variant="flat" className="text-center py-6">
                  <p className="text-sm text-slate-400">

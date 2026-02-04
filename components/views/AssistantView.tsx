@@ -3,8 +3,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button, SectionHeader } from '../Shared';
 import { ai, createChat, sendMessage, generateImage, generateSpeech, transcribeAudio } from '../../services/geminiService';
 import { LiveServerMessage, Modality } from '@google/genai';
-import { Mic, Send, Image as ImageIcon, Sparkles, Volume2, Globe, Brain, StopCircle, X, Loader2, Radio } from 'lucide-react';
+import { Mic, Send, Image as ImageIcon, Sparkles, Volume2, Globe, Brain, StopCircle, X, Loader2, Radio, Lightbulb, ArrowRight, Check } from 'lucide-react';
 import { View, UserProfile, Goal } from '../../types';
+
+interface CoachingContent {
+    title: string;
+    advice: string;
+    category: 'REST' | 'FOCUS' | 'CONNECT' | 'GROWTH' | 'GROUNDING';
+    actionItem?: string;
+}
 
 interface Message {
   id: string;
@@ -13,6 +20,7 @@ interface Message {
   image?: string;
   audio?: string; // base64
   groundingUrls?: {title: string, uri: string}[];
+  coaching?: CoachingContent;
 }
 
 interface AssistantViewProps {
@@ -79,24 +87,24 @@ export const AssistantView: React.FC<AssistantViewProps> = ({ onChangeView }) =>
       ${goalsContext}
 
       INTENT RECOGNITION & CAPABILITIES:
-      1. NAVIGATE: Analyze user text for intents to access specific features. Use the 'navigate' tool.
-         - "I need to log my sleep" or "track mood" -> navigate(LOG)
-         - "Help me relax" or "I'm stressed" -> navigate(MIND)
-         - "How have I been doing lately?" -> navigate(INSIGHTS)
-         - "I want to work on my learning journey" or "Check my progress on ${activeGoalTitle}" -> navigate(GOALS)
-         - "I feel lonely" or "Call my trusted contact" -> navigate(CONNECT)
+      1. NAVIGATE: If the user expresses a clear intent to use a feature, use the 'navigate' tool immediately.
+         - "I need to log my sleep", "track mood" -> navigate(LOG)
+         - "Help me relax", "I'm stressed", "Breathing exercise" -> navigate(MIND)
+         - "Show my data", "trends", "insights" -> navigate(INSIGHTS)
+         - "Check my goals", "learning journey" -> navigate(GOALS)
+         - "I feel lonely", "Call friend" -> navigate(CONNECT)
       
-      2. COACH: Provide tailored advice based on their Profile and Goals.
-         - If they are a Shift Worker, acknowledge schedule challenges.
+      2. PROVIDE COACHING: If the user asks for advice, tips, or seems in need of guidance, use the 'provideCoaching' tool.
+         - "Give me a tip for better sleep" -> provideCoaching(category: 'REST', ...)
+         - "I can't focus" -> provideCoaching(category: 'FOCUS', ...)
+         - "I need motivation" -> provideCoaching(category: 'GROWTH', ...)
+      
+      3. COACH: Provide tailored advice based on their Profile and Goals.
+         - Use their name occasionally.
+         - If they are a Shift Worker, acknowledge schedule challenges in your advice.
          - If they have active Learning Journeys, encourage small next steps on their milestones.
       
-      3. CONNECT: If the user expresses high stress, anxiety, overwhelm, or loneliness, gently suggest navigating to the 'CONNECT' view (Trusted Circle).
-
-      GUIDELINES:
-      - Keep answers concise unless asked to elaborate.
-      - Never diagnose.
-      - Never claim to be a doctor.
-      - If crisis is detected, suggest human connection via the Connect tool or professional help.
+      4. TONE: Warm, concise, and grounded. Avoid toxic positivity. Validating but solution-oriented.
       `;
 
       chatRef.current = createChat(systemPrompt);
@@ -134,15 +142,12 @@ export const AssistantView: React.FC<AssistantViewProps> = ({ onChangeView }) =>
             const functionResponses = [];
 
             for (const call of functionCalls) {
+                // HANDLE NAVIGATION
                 if (call.name === 'navigate' && onChangeView) {
                     const args = call.args as any;
-                    console.log("Navigating to:", args.view);
                     
-                    // Execute Navigation
                     onChangeView(args.view as View);
                     
-                    // Prepare response for the model
-                    // FIXED: Wrap in functionResponse to form a valid Part
                     functionResponses.push({
                         functionResponse: {
                             name: call.name,
@@ -151,12 +156,36 @@ export const AssistantView: React.FC<AssistantViewProps> = ({ onChangeView }) =>
                         }
                     });
 
-                    // Add a system message to chat to inform user (optional, but good UX)
                     setMessages(prev => [...prev, { 
                         id: Date.now().toString(), 
                         role: 'model', 
                         text: `*Opening ${args.view === 'CONNECT' ? 'Trusted Circle' : args.view}...*` 
                     }]);
+                }
+                
+                // HANDLE COACHING
+                else if (call.name === 'provideCoaching') {
+                    const args = call.args as any;
+                    const coachingContent: CoachingContent = {
+                        title: args.title,
+                        advice: args.advice,
+                        category: args.category,
+                        actionItem: args.actionItem
+                    };
+
+                    setMessages(prev => [...prev, {
+                        id: Date.now().toString(),
+                        role: 'model',
+                        coaching: coachingContent
+                    }]);
+
+                    functionResponses.push({
+                        functionResponse: {
+                            name: call.name,
+                            id: call.id,
+                            response: { success: true }
+                        }
+                    });
                 }
             }
 
@@ -179,9 +208,9 @@ export const AssistantView: React.FC<AssistantViewProps> = ({ onChangeView }) =>
             }]);
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: "I encountered a hiccup. Please try again." }]);
+      setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: e.message || "I encountered a hiccup. Please try again." }]);
     } finally {
       setIsLoading(false);
     }
@@ -263,13 +292,44 @@ export const AssistantView: React.FC<AssistantViewProps> = ({ onChangeView }) =>
                 ? 'bg-slate-800 dark:bg-teal-700 text-white rounded-br-none' 
                 : 'bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-bl-none shadow-sm'
             }`}>
-              {msg.image ? (
-                <img src={msg.image} alt="Generated" className="rounded-xl w-full max-w-sm" />
-              ) : (
+              
+              {/* IMAGE CONTENT */}
+              {msg.image && (
+                <img src={msg.image} alt="Generated" className="rounded-xl w-full max-w-sm mb-2" />
+              )}
+              
+              {/* COACHING CARD */}
+              {msg.coaching && (
+                  <div className="mb-4 bg-slate-50 dark:bg-slate-800 rounded-xl p-4 border border-slate-100 dark:border-slate-700">
+                      <div className="flex items-center gap-2 mb-2">
+                          <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                              msg.coaching.category === 'REST' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' :
+                              msg.coaching.category === 'FOCUS' ? 'bg-teal-100 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400' :
+                              msg.coaching.category === 'GROUNDING' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' :
+                              'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                          }`}>
+                              {msg.coaching.category}
+                          </span>
+                      </div>
+                      <h4 className="font-bold text-slate-800 dark:text-slate-100 mb-1">{msg.coaching.title}</h4>
+                      <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed italic border-l-2 border-slate-300 dark:border-slate-600 pl-3 my-2">
+                          "{msg.coaching.advice}"
+                      </p>
+                      {msg.coaching.actionItem && (
+                          <div className="mt-3 flex items-center gap-2 text-xs font-medium text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 p-2 rounded-lg">
+                              <Lightbulb size={14} className="shrink-0" />
+                              {msg.coaching.actionItem}
+                          </div>
+                      )}
+                  </div>
+              )}
+
+              {/* TEXT CONTENT */}
+              {msg.text && (
                 <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
               )}
               
-              {/* Grounding Sources */}
+              {/* GROUNDING SOURCES */}
               {msg.groundingUrls && msg.groundingUrls.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-slate-100/20 dark:border-slate-700/50">
                       <p className="text-xs font-bold uppercase opacity-50 mb-1">Sources</p>
@@ -283,7 +343,7 @@ export const AssistantView: React.FC<AssistantViewProps> = ({ onChangeView }) =>
                   </div>
               )}
 
-              {/* Actions */}
+              {/* ACTIONS */}
               {msg.role === 'model' && msg.text && (
                   <button onClick={() => handleTTS(msg.text!)} className="mt-2 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
                       <Volume2 size={16} />
@@ -296,7 +356,7 @@ export const AssistantView: React.FC<AssistantViewProps> = ({ onChangeView }) =>
             <div className="flex justify-start">
                 <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 rounded-bl-none shadow-sm flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
                     <Loader2 size={16} className="animate-spin text-teal-500" />
-                    {useThinking ? "Thinking deeply..." : isCreative ? "Creating image..." : "Typing..."}
+                    {useThinking ? "Thinking deeply..." : isCreative ? "Creating image..." : "Analyzing intent..."}
                 </div>
             </div>
         )}

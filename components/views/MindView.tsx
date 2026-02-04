@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button, SectionHeader, VoiceInput, Toggle, Input } from '../Shared';
 import { reframeThought, generateSpeech } from '../../services/geminiService';
 import { Wind, ShieldCheck, RefreshCcw, ArrowLeft, Play, Square, Settings2, Volume2, VolumeX, Loader2, Circle, Heart, Phone, MessageSquare, Plus, Trash2, Users, Split, Camera, PenTool, AlertCircle } from 'lucide-react';
-import { FadeIn, AmbientBreath } from '../Motion';
+import { FadeIn, AmbientBreath, useMotion } from '../Motion';
 import { TrustedContact } from '../../types';
 
 type Mode = 'MENU' | 'REALITY' | 'BREATH' | 'CONNECT';
@@ -271,6 +271,7 @@ const TrustedCircleTool: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 // --- BREATHING TOOL ---
 
 const BreathingTool: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+    const { prefersReducedMotion } = useMotion();
     const [isActive, setIsActive] = useState(false);
     const [duration, setDuration] = useState(1); // minutes
     const [timeLeft, setTimeLeft] = useState(60);
@@ -322,8 +323,8 @@ const BreathingTool: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         if (audioEnabled) {
             setIsPreparingAudio(true);
             try {
-                // Generate calm intro audio
-                const prompt = "Sit comfortably. Relax your shoulders. Inhale deeply... and exhale completely. Let's begin.";
+                // Generate calm intro audio with simplified punctuation to avoid TTS 500 errors
+                const prompt = "Sit comfortably. Relax your shoulders. Inhale deeply, and exhale completely. Let's begin.";
                 const audioData = await generateSpeech(prompt);
                 if (audioData) {
                     if (audioRef.current) {
@@ -337,6 +338,7 @@ const BreathingTool: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 }
             } catch (e) {
                 console.error("Audio generation failed", e);
+                // Fail silently (user still gets visualizer) or optionally show toast here
             } finally {
                 setIsPreparingAudio(false);
             }
@@ -366,23 +368,51 @@ const BreathingTool: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
             <SectionHeader title="Deep Breath" subtitle="Coherent breathing (4s in, 6s out) to reset your rhythm." />
 
-            <Card className="flex-1 flex flex-col items-center justify-center py-12 relative overflow-hidden bg-gradient-to-b from-white to-blue-50/30 dark:from-slate-900 dark:to-slate-800/50">
+            <Card className="flex-1 flex flex-col items-center justify-center py-12 relative overflow-hidden bg-gradient-to-b from-white to-blue-50/30 dark:from-slate-900 dark:to-slate-800/50 min-h-[500px]">
                 
-                {/* Visualizer */}
-                <div className="relative w-64 h-64 flex items-center justify-center mb-10">
-                    {/* Outer Rings */}
-                    <div className={`absolute inset-0 rounded-full border-2 border-blue-100 dark:border-blue-900/30 transition-all duration-[4000ms] ease-in-out ${phase === 'INHALE' ? 'scale-110 opacity-100' : 'scale-100 opacity-50'}`} />
-                    <div className={`absolute inset-4 rounded-full border border-blue-200 dark:border-blue-800/30 transition-all duration-[4000ms] ease-in-out ${phase === 'INHALE' ? 'scale-105 opacity-80' : 'scale-95 opacity-40'}`} />
+                {/* Immersive Visualizer */}
+                <div className="relative w-80 h-80 flex items-center justify-center mb-12">
+                    {/* Subconscious Pulse (Always active, subtle rhythm) */}
+                    <div className={`absolute inset-4 bg-teal-400/10 dark:bg-teal-500/10 rounded-full blur-3xl ${!prefersReducedMotion ? 'animate-pulse-slow' : 'opacity-10'}`} />
+
+                    {/* Ambient Background Glow - Reacts to rhythm */}
+                    <div 
+                        className={`absolute inset-0 bg-gradient-to-tr from-blue-300/30 to-teal-300/30 dark:from-blue-900/30 dark:to-teal-900/30 rounded-full blur-3xl transition-all ease-in-out
+                        ${prefersReducedMotion ? 'opacity-20' : 
+                          phase === 'INHALE' ? 'duration-[4000ms] scale-125 opacity-70' : 
+                          phase === 'HOLD' ? 'duration-[2000ms] scale-125 opacity-60' :
+                          'duration-[6000ms] scale-75 opacity-20'
+                        }`} 
+                    />
+
+                    {/* Outer Expansion Ring */}
+                    <div className={`absolute inset-0 rounded-full border border-blue-100/50 dark:border-blue-800/20 transition-all ease-in-out
+                        ${prefersReducedMotion ? '' :
+                          phase === 'INHALE' ? 'duration-[4000ms] scale-110 opacity-100 border-2' : 'duration-[6000ms] scale-90 opacity-30 border'
+                        }`} 
+                    />
+                    
+                    {/* Middle Ring */}
+                    <div className={`absolute inset-8 rounded-full border border-blue-200/50 dark:border-blue-700/30 transition-all ease-in-out
+                        ${prefersReducedMotion ? '' :
+                          phase === 'INHALE' ? 'duration-[4000ms] scale-105 opacity-80' : 'duration-[6000ms] scale-95 opacity-40'
+                        }`} 
+                    />
                     
                     {/* Core Breath Circle */}
                     <div 
-                        className={`w-32 h-32 bg-blue-400 dark:bg-blue-600 rounded-full shadow-lg shadow-blue-200 dark:shadow-blue-900/50 transition-all ease-in-out flex items-center justify-center z-10
-                            ${phase === 'INHALE' ? 'duration-[4000ms] scale-[2.2] bg-blue-300 dark:bg-blue-500' : 'duration-[6000ms] scale-100 bg-blue-500 dark:bg-blue-700'}
+                        className={`w-40 h-40 rounded-full shadow-2xl transition-all ease-in-out flex items-center justify-center z-10 relative overflow-hidden
+                            ${phase === 'INHALE' ? 'duration-[4000ms] scale-150 bg-gradient-to-br from-blue-300 to-teal-300 dark:from-blue-500 dark:to-teal-500 shadow-blue-200/50 dark:shadow-blue-900/50' : 
+                              phase === 'HOLD' ? 'duration-[2000ms] scale-150 bg-gradient-to-br from-blue-400 to-teal-400 dark:from-blue-600 dark:to-teal-600' :
+                              'duration-[6000ms] scale-100 bg-gradient-to-br from-blue-500 to-indigo-500 dark:from-blue-700 dark:to-indigo-800 shadow-none'}
                             ${phase === 'WAIT' ? 'duration-500 scale-100 bg-slate-200 dark:bg-slate-700' : ''}
                         `}
                     >
-                        <span className={`text-white font-medium tracking-widest uppercase text-sm transition-opacity duration-500 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
-                            {phase === 'INHALE' ? 'Inhale' : 'Exhale'}
+                        {/* Inner texture/shine */}
+                        <div className={`absolute inset-0 bg-white/20 rounded-full transform -translate-y-1/2 blur-md transition-opacity duration-1000 ${phase === 'INHALE' ? 'opacity-50' : 'opacity-0'}`} />
+
+                        <span className={`text-white font-medium tracking-[0.2em] uppercase text-sm transition-opacity duration-500 ${isActive ? 'opacity-100' : 'opacity-0'}`}>
+                            {phase === 'INHALE' ? 'Inhale' : phase === 'HOLD' ? 'Hold' : phase === 'EXHALE' ? 'Exhale' : ''}
                         </span>
                     </div>
                 </div>

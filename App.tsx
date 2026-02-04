@@ -162,7 +162,7 @@ const AppContent: React.FC = () => {
                         <img src={user.avatar} className="w-5 h-5 rounded-full" alt="Me" /> : 
                         <UserIcon size={20} />
                     } 
-                    label={user ? "Me" : "Sign In"} 
+                    label="Profile" 
                     isActive={activeView === View.PROFILE} 
                     onClick={() => handleNav(View.PROFILE)} 
                 />
@@ -189,13 +189,17 @@ const App: React.FC = () => (
 const NavLink = ({ label, active, onClick }: { label: string, active: boolean, onClick: () => void }) => (
   <button 
     onClick={onClick}
-    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-calm ${
+    className={`relative px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ease-calm ${
       active 
-        ? 'text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 scale-105' 
-        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900 hover:scale-105'
+        ? 'text-teal-900 dark:text-teal-100 bg-slate-100 dark:bg-slate-800 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 scale-105' 
+        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900/50'
     }`}
   >
     {label}
+    {/* Subtle active state glow */}
+    {active && (
+        <span className="absolute inset-0 rounded-full bg-teal-500/5 dark:bg-teal-400/5 animate-pulse-slow pointer-events-none" />
+    )}
   </button>
 );
 
@@ -203,10 +207,19 @@ const NavLink = ({ label, active, onClick }: { label: string, active: boolean, o
 const MobileIcon = ({ icon, label, isActive, onClick }: any) => (
   <button 
     onClick={onClick}
-    className={`flex flex-col items-center gap-1 w-16 py-1 transition-all duration-200 active:scale-90 touch-manipulation ${isActive ? 'text-teal-600 dark:text-teal-400 -translate-y-1' : 'text-slate-400 dark:text-slate-500'}`}
+    className={`relative flex flex-col items-center gap-1 w-16 py-2 transition-all duration-300 ease-calm touch-manipulation group ${
+        isActive ? '-translate-y-1' : ''
+    }`}
   >
-    {icon}
-    <span className="text-[10px] font-medium">{label}</span>
+    {/* Active Background Pill */}
+    <div className={`absolute inset-x-1 top-1 bottom-1 bg-teal-50 dark:bg-teal-900/20 rounded-2xl transition-all duration-300 -z-10 ${isActive ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`} />
+
+    <div className={`transition-colors duration-300 ${isActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`}>
+        {icon}
+    </div>
+    <span className={`text-[10px] font-medium transition-colors duration-300 ${isActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400 dark:text-slate-500'}`}>
+        {label}
+    </span>
   </button>
 );
 

@@ -85,6 +85,7 @@ export interface Milestone {
   title: string;
   description?: string;
   isCompleted: boolean;
+  searchQuery?: string; // For educational content integration
 }
 
 export interface Goal {
@@ -101,6 +102,9 @@ export interface Goal {
   currentValue?: number;
   targetValue?: number;
   unit?: string; // e.g., 'days', 'sessions'
+  
+  // Daily Tracking History (ISO Date string -> Completed)
+  history?: Record<string, boolean>; 
 }
 
 export interface TrustedContact {
