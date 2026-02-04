@@ -2,9 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, SectionHeader, VoiceInput, EmptyState, Input } from '../Shared';
 import { generateLearningJourney } from '../../services/geminiService';
-import { Compass, CheckCircle, Circle, Plus, ChevronDown, ChevronUp, Loader2, Sparkles, X, Target, Zap, Beaker, Minus, Trash2 } from 'lucide-react';
+import { Compass, CheckCircle, Circle, Plus, ChevronDown, ChevronUp, Loader2, Sparkles, X, Target, Zap, Beaker, Minus, Trash2, Repeat } from 'lucide-react';
 import { Goal, Milestone } from '../../types';
 import { FadeIn } from '../Motion';
+
+type CreateStep = 'TYPE_SELECT' | 'INPUT_LEARNING' | 'INPUT_HABIT' | 'GENERATING' | 'REVIEW';
 
 export const GoalsView: React.FC = () => {
   // --- STATE ---
@@ -14,9 +16,16 @@ export const GoalsView: React.FC = () => {
   });
 
   const [isCreating, setIsCreating] = useState(false);
-  const [createStep, setCreateStep] = useState<'INPUT' | 'GENERATING' | 'REVIEW'>('INPUT');
+  const [createStep, setCreateStep] = useState<CreateStep>('TYPE_SELECT');
+  
+  // Learning Journey State
   const [topic, setTopic] = useState('');
   const [generatedPlan, setGeneratedPlan] = useState<{ title: string; milestones: any[] } | null>(null);
+
+  // Habit State
+  const [habitTitle, setHabitTitle] = useState('');
+  const [habitTarget, setHabitTarget] = useState(1);
+  const [habitUnit, setHabitUnit] = useState('times');
 
   // --- PERSISTENCE ---
   useEffect(() => {
@@ -24,6 +33,8 @@ export const GoalsView: React.FC = () => {
   }, [goals]);
 
   // --- HANDLERS ---
+  
+  // 1. Learning Journey Handlers
   const handleGenerate = async () => {
     if (!topic.trim()) return;
     setCreateStep('GENERATING');
@@ -32,7 +43,7 @@ export const GoalsView: React.FC = () => {
     setCreateStep('REVIEW');
   };
 
-  const handleSaveGoal = () => {
+  const handleSaveLearningGoal = () => {
     if (!generatedPlan) return;
     
     const newGoal: Goal = {
@@ -54,11 +65,35 @@ export const GoalsView: React.FC = () => {
     resetCreation();
   };
 
+  // 2. Habit Handlers
+  const handleSaveHabit = () => {
+      if (!habitTitle.trim()) return;
+
+      const newGoal: Goal = {
+          id: Date.now().toString(),
+          title: habitTitle,
+          type: 'habit',
+          active: true,
+          progress: 0,
+          createdAt: new Date().toISOString(),
+          currentValue: 0,
+          targetValue: habitTarget,
+          unit: habitUnit
+      };
+
+      setGoals([newGoal, ...goals]);
+      resetCreation();
+  };
+
+  // Shared
   const resetCreation = () => {
     setIsCreating(false);
-    setCreateStep('INPUT');
+    setCreateStep('TYPE_SELECT');
     setTopic('');
     setGeneratedPlan(null);
+    setHabitTitle('');
+    setHabitTarget(1);
+    setHabitUnit('times');
   };
 
   const toggleMilestone = (goalId: string, milestoneId: string) => {
@@ -102,14 +137,106 @@ export const GoalsView: React.FC = () => {
                  <button onClick={resetCreation} className="p-2 -ml-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                      <X size={24} className="text-slate-400" />
                  </button>
-                 <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">New Journey</span>
+                 <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">New Goal</span>
                  <div className="w-10" />
               </div>
 
-              {createStep === 'INPUT' && (
-                  <div className="flex-1 flex flex-col justify-center space-y-8">
+              {/* STEP 1: TYPE SELECTION */}
+              {createStep === 'TYPE_SELECT' && (
+                  <div className="flex-1 flex flex-col justify-center space-y-6 animate-slide-up">
+                      <div className="text-center mb-4">
+                          <h2 className="text-2xl font-medium text-slate-800 dark:text-slate-100">Choose your path</h2>
+                          <p className="text-slate-500 dark:text-slate-400 mt-2">What kind of progress are you looking for?</p>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <Card 
+                              onClick={() => setCreateStep('INPUT_LEARNING')} 
+                              className="cursor-pointer hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-md group transition-all"
+                          >
+                              <div className="w-14 h-14 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                  <Compass size={28} />
+                              </div>
+                              <h3 className="font-medium text-lg text-slate-800 dark:text-slate-100">Learning Journey</h3>
+                              <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+                                  Explore a new topic. AI creates a structured path of milestones for you.
+                              </p>
+                          </Card>
+                          <Card 
+                              onClick={() => setCreateStep('INPUT_HABIT')} 
+                              className="cursor-pointer hover:border-amber-200 dark:hover:border-amber-800 hover:shadow-md group transition-all"
+                          >
+                              <div className="w-14 h-14 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                  <Zap size={28} />
+                              </div>
+                              <h3 className="font-medium text-lg text-slate-800 dark:text-slate-100">Simple Habit</h3>
+                              <p className="text-sm text-slate-500 mt-2 leading-relaxed">
+                                  Track consistency. Set a daily target (e.g. water, reading, steps).
+                              </p>
+                          </Card>
+                      </div>
+                  </div>
+              )}
+
+              {/* STEP 2a: HABIT INPUT */}
+              {createStep === 'INPUT_HABIT' && (
+                  <div className="flex-1 flex flex-col justify-center space-y-6 animate-slide-up">
+                      <div className="text-center">
+                          <div className="w-16 h-16 bg-amber-50 dark:bg-amber-900/20 rounded-full flex items-center justify-center text-amber-500 mx-auto mb-4">
+                              <Zap size={32} />
+                          </div>
+                          <h2 className="text-xl font-medium text-slate-800 dark:text-slate-100">Define your Habit</h2>
+                      </div>
+                      
+                      <Card className="space-y-6 max-w-sm mx-auto w-full p-6 md:p-8">
+                          <div>
+                              <Input 
+                                  label="Habit Name"
+                                  value={habitTitle} 
+                                  onChange={e => setHabitTitle(e.target.value)} 
+                                  placeholder="e.g. Drink Water" 
+                                  autoFocus
+                              />
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                  <Input 
+                                      label="Daily Target"
+                                      type="number" 
+                                      min="1"
+                                      value={habitTarget} 
+                                      onChange={e => setHabitTarget(parseInt(e.target.value) || 1)} 
+                                  />
+                              </div>
+                              <div>
+                                  <Input 
+                                      label="Unit"
+                                      value={habitUnit} 
+                                      onChange={e => setHabitUnit(e.target.value)} 
+                                      placeholder="e.g. times" 
+                                  />
+                              </div>
+                          </div>
+
+                          <div className="pt-2 flex gap-3">
+                              <Button variant="secondary" onClick={() => setCreateStep('TYPE_SELECT')} className="flex-1">Back</Button>
+                              <Button 
+                                  onClick={handleSaveHabit} 
+                                  disabled={!habitTitle} 
+                                  className="flex-1 bg-amber-500 hover:bg-amber-600 text-white shadow-amber-200 dark:shadow-none"
+                              >
+                                  Create Habit
+                              </Button>
+                          </div>
+                      </Card>
+                  </div>
+              )}
+
+              {/* STEP 2b: LEARNING INPUT */}
+              {createStep === 'INPUT_LEARNING' && (
+                  <div className="flex-1 flex flex-col justify-center space-y-8 animate-slide-up">
                       <div className="text-center space-y-4">
-                          <div className="w-16 h-16 bg-teal-50 dark:bg-teal-900/30 rounded-full flex items-center justify-center text-teal-600 dark:text-teal-400 mx-auto shadow-sm">
+                          <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center text-indigo-500 dark:text-indigo-400 mx-auto shadow-sm">
                               <Compass size={32} />
                           </div>
                           <h2 className="text-2xl font-medium text-slate-800 dark:text-slate-100">Where does your curiosity lead?</h2>
@@ -126,17 +253,24 @@ export const GoalsView: React.FC = () => {
                               placeholder="e.g. Urban Gardening, Stoicism, Python..."
                               className="flex-1 bg-transparent border-none outline-none text-lg text-slate-800 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-600 h-14"
                               onKeyDown={e => e.key === 'Enter' && handleGenerate()}
+                              autoFocus
                           />
-                          <Button onClick={handleGenerate} disabled={!topic.trim()} className="rounded-xl h-12 w-12 p-0 flex items-center justify-center">
+                          <Button onClick={handleGenerate} disabled={!topic.trim()} className="rounded-xl h-12 w-12 p-0 flex items-center justify-center bg-indigo-500 hover:bg-indigo-600">
                               <Sparkles size={20} />
                           </Button>
+                      </div>
+                      
+                      <div className="flex justify-center">
+                           <button onClick={() => setCreateStep('TYPE_SELECT')} className="text-sm text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
+                               Go Back
+                           </button>
                       </div>
                   </div>
               )}
 
               {createStep === 'GENERATING' && (
                   <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6">
-                      <Loader2 size={40} className="text-teal-500 animate-spin" />
+                      <Loader2 size={40} className="text-indigo-500 animate-spin" />
                       <p className="text-slate-500 dark:text-slate-400 text-lg animate-pulse">Designing your journey...</p>
                   </div>
               )}
@@ -160,8 +294,8 @@ export const GoalsView: React.FC = () => {
                       </div>
 
                       <div className="pt-4 flex gap-3">
-                          <Button variant="secondary" onClick={() => setCreateStep('INPUT')} className="flex-1">Back</Button>
-                          <Button onClick={handleSaveGoal} className="flex-1">Start Journey</Button>
+                          <Button variant="secondary" onClick={() => setCreateStep('INPUT_LEARNING')} className="flex-1">Back</Button>
+                          <Button onClick={handleSaveLearningGoal} className="flex-1 bg-indigo-500 hover:bg-indigo-600">Start Journey</Button>
                       </div>
                   </div>
               )}
@@ -175,14 +309,14 @@ export const GoalsView: React.FC = () => {
       <div className="flex items-center justify-between">
           <SectionHeader title="Growth" subtitle="Curiosity without the pressure." />
           <Button onClick={() => setIsCreating(true)} variant="soft" className="h-10 text-sm">
-              <Plus size={18} /> New Journey
+              <Plus size={18} /> New Goal
           </Button>
       </div>
 
       {goals.length === 0 ? (
           <EmptyState 
-            title="No Journeys Yet" 
-            message="Growth happens in small steps. Start a new Learning Journey to explore something new."
+            title="No Goals Yet" 
+            message="Growth happens in small steps. Start a new Learning Journey or set a Simple Habit."
             actionLabel="Explore Ideas"
             onAction={() => setIsCreating(true)}
             icon={Target}
@@ -299,13 +433,13 @@ const GoalCard: React.FC<{
                      <div className="flex items-center gap-2 ml-2">
                         <button 
                             onClick={() => onUpdateValue(goal.id, -1)}
-                            className="p-2 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            className="p-2 rounded-full bg-slate-50 dark:bg-slate-800 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors active:scale-95"
                         >
                             <Minus size={18} />
                         </button>
                         <button 
                             onClick={() => onUpdateValue(goal.id, 1)}
-                            className={`p-2 rounded-full transition-colors text-white ${getProgressColor()}`}
+                            className={`p-2 rounded-full transition-colors text-white active:scale-95 ${getProgressColor()}`}
                         >
                             <Plus size={18} />
                         </button>
@@ -319,9 +453,9 @@ const GoalCard: React.FC<{
                     </button>
                 )}
                 
-                {/* Simple Delete for Non-Learning if needed, though mostly handled inside expand for Learning */}
-                {(!isLearning && !isHabit && !isExperiment) && (
-                     <button onClick={() => setExpanded(!expanded)} className="text-slate-300 hover:text-slate-500 transition-colors ml-4 p-1">
+                {/* Simple Delete for Non-Learning */}
+                {(!isLearning) && (
+                     <button onClick={() => setExpanded(!expanded)} className="text-slate-300 hover:text-slate-500 dark:hover:text-slate-400 transition-colors ml-4 p-1">
                         <ChevronDown size={20} />
                      </button>
                 )}
@@ -353,8 +487,30 @@ const GoalCard: React.FC<{
                             </div>
                         </div>
                     ))}
+                    
+                    {/* Habit Details (Simple) */}
+                    {(isHabit || isExperiment) && (
+                        <div className="px-1 py-2">
+                             <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400 mb-2">
+                                 <span>Current Progress</span>
+                                 <span className="font-medium text-slate-800 dark:text-slate-200">{goal.progress}%</span>
+                             </div>
+                             <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                <div 
+                                    className={`h-full transition-all duration-500 ${getProgressColor()}`} 
+                                    style={{ width: `${goal.progress}%` }}
+                                />
+                             </div>
+                             {isHabit && (
+                                 <div className="mt-4 flex gap-2 text-xs text-slate-400">
+                                     <Repeat size={14} />
+                                     <span>Resets daily</span>
+                                 </div>
+                             )}
+                        </div>
+                    )}
 
-                    {/* Simple Delete Action */}
+                    {/* Delete Action */}
                     <div className="pt-4 flex justify-end">
                         <button 
                             onClick={(e) => { e.stopPropagation(); onDelete(goal.id); }}
