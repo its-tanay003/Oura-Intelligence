@@ -3,7 +3,14 @@ import { GoogleGenAI, Type, Chat, Modality, FunctionDeclaration } from "@google/
 import { ThoughtRecord } from "../types";
 
 // Safety check for API Key
-const apiKey = process.env.API_KEY || '';
+const getApiKey = () => {
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+        return process.env.API_KEY;
+    }
+    return '';
+};
+
+const apiKey = getApiKey();
 const isApiConfigured = !!apiKey;
 
 export const ai = isApiConfigured ? new GoogleGenAI({ apiKey }) : null;
