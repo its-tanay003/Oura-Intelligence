@@ -16,6 +16,37 @@ export enum Emotion {
   OVERWHELMED = 'Overwhelmed'
 }
 
+export interface UserProfile {
+  // Identity
+  name: string;
+  email: string;
+  pronouns: string;
+  region: string;
+  
+  // Work & Context
+  workType: 'Student' | 'Office' | 'Remote' | 'Manual' | 'Shift-based' | 'Freelance' | 'Other';
+  workSchedule: 'Fixed' | 'Flexible' | 'Rotational';
+  screenTime: 'Low' | 'Medium' | 'High';
+  physicalActivity: 'Low' | 'Medium' | 'High';
+  workStress: number; // 0-100 normalized
+  
+  // Preferences
+  notifications: 'Normal' | 'Quiet' | 'None';
+  
+  // Privacy
+  privacy: {
+    // System Level
+    aiPersonalization: boolean;
+    analytics: boolean;
+    visibleToResearchers: boolean;
+    
+    // Data Level (Granular)
+    shareWorkContext: boolean;     // Can AI use job/schedule info?
+    shareDailyLogs: boolean;       // Can AI use sleep/mood data?
+    shareJournalEntries: boolean;  // Can AI process free-text thoughts?
+  };
+}
+
 export interface DailyLog {
   date: string;
   sleepHours: number;

@@ -1,30 +1,60 @@
 import React, { useEffect, useState } from 'react';
-import { Card, SectionHeader } from '../Shared';
+import { Card, SectionHeader, EmptyState } from '../Shared';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { generateDailyInsight } from '../../services/geminiService';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Calendar } from 'lucide-react';
+import { View } from '../../types';
 
-const data = [
-  { day: 'M', score: 60, type: 'Rest' },
-  { day: 'T', score: 75, type: 'Active' },
-  { day: 'W', score: 50, type: 'Low' },
-  { day: 'T', score: 85, type: 'Good' },
-  { day: 'F', score: 70, type: 'Steady' },
-  { day: 'S', score: 90, type: 'Peak' },
-  { day: 'S', score: 80, type: 'Rest' },
-];
+// Mock Data - Temporarily set to empty to demonstrate the "Empty State" UI
+const data: any[] = []; 
+// const data = [
+//   { day: 'M', score: 60, type: 'Rest' },
+//   { day: 'T', score: 75, type: 'Active' },
+//   { day: 'W', score: 50, type: 'Low' },
+//   { day: 'T', score: 85, type: 'Good' },
+//   { day: 'F', score: 70, type: 'Steady' },
+//   { day: 'S', score: 90, type: 'Peak' },
+//   { day: 'S', score: 80, type: 'Rest' },
+// ];
 
-export const InsightsView: React.FC = () => {
+interface InsightsViewProps {
+    onChangeView: (view: View) => void;
+}
+
+export const InsightsView: React.FC<InsightsViewProps> = ({ onChangeView }) => {
   const [insight, setInsight] = useState<{title: string, body: string} | null>(null);
 
   useEffect(() => {
-    // Generate insight on mount
-    const fetchInsight = async () => {
-        const result = await generateDailyInsight(data);
-        setInsight(result);
-    };
-    fetchInsight();
+    // Only fetch insights if we have data
+    if (data.length > 0) {
+        const fetchInsight = async () => {
+            const result = await generateDailyInsight(data);
+            setInsight(result);
+        };
+        fetchInsight();
+    }
   }, []);
+
+  // Empty State Logic
+  if (data.length < 3) {
+    return (
+        <div className="pb-12 animate-fade-in space-y-6 md:space-y-8 max-w-4xl mx-auto">
+            <SectionHeader title="Insights" subtitle="Patterns appear over time." />
+            <EmptyState 
+                title="Gathering Data"
+                message="We need about 3 days of logs to start finding meaningful connections between your sleep and energy."
+                actionLabel="Log Today"
+                onAction={() => onChangeView(View.LOG)}
+                icon={Calendar}
+            />
+            <Card variant="flat" className="text-center py-6">
+                 <p className="text-sm text-slate-400">
+                    "Consistency is not about perfection, it's about returning."
+                </p>
+            </Card>
+        </div>
+    );
+  }
 
   return (
     <div className="pb-12 animate-fade-in space-y-6 md:space-y-8 max-w-4xl mx-auto">

@@ -4,6 +4,7 @@ import { HomeView } from './components/views/HomeView';
 import { LogView } from './components/views/LogView';
 import { MindView } from './components/views/MindView';
 import { InsightsView } from './components/views/InsightsView';
+import { ProfileView } from './components/views/ProfileView';
 import { Home, PlusCircle, Brain, BarChart2, User, Layout } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -14,7 +15,8 @@ const App: React.FC = () => {
       case View.HOME: return <HomeView onChangeView={setActiveView} />;
       case View.LOG: return <LogView />;
       case View.MIND: return <MindView />;
-      case View.INSIGHTS: return <InsightsView />;
+      case View.INSIGHTS: return <InsightsView onChangeView={setActiveView} />;
+      case View.PROFILE: return <ProfileView />;
       default: return <div className="p-8 text-center text-slate-500">Coming Soon</div>;
     }
   };
