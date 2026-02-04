@@ -1,11 +1,11 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, Chat, Modality } from "@google/genai";
 import { ThoughtRecord } from "../types";
 
 // Safety check for API Key
 const apiKey = process.env.API_KEY || '';
 const isApiConfigured = !!apiKey;
 
-const ai = isApiConfigured ? new GoogleGenAI({ apiKey }) : null;
+export const ai = isApiConfigured ? new GoogleGenAI({ apiKey }) : null;
 
 // Helper to handle API unavailability gracefully
 const handleMissingApi = (fallbackText: string): string => {
@@ -14,9 +14,136 @@ const handleMissingApi = (fallbackText: string): string => {
 };
 
 /**
- * Reframes a negative thought using Cognitive Behavioral Therapy (CBT) grounding techniques.
- * strictly non-clinical.
+ * CHAT SERVICE
+ * Uses gemini-3-pro-preview for complex reasoning and chat.
+ * Supports Search Grounding and Thinking Mode.
  */
+export const createChat = (systemInstruction: string) => {
+  if (!ai) return null;
+  return ai.chats.create({
+    model: 'gemini-3-pro-preview',
+    config: {
+      systemInstruction,
+    }
+  });
+};
+
+export const sendMessage = async (
+  chat: Chat, 
+  message: string, 
+  useThinking: boolean = false, 
+  useSearch: boolean = false
+) => {
+  if (!ai) return { text: "Service unavailable." };
+
+  const config: any = {
+    temperature: 0.7,
+  };
+
+  if (useThinking) {
+    // Gemini 3 Pro max thinking budget
+    config.thinkingConfig = { thinkingBudget: 32768 }; 
+  }
+
+  if (useSearch) {
+    config.tools = [{ googleSearch: {} }];
+  }
+
+  // If thinking is NOT enabled, we can set maxOutputTokens safely if we want, 
+  // but recommended practice is to avoid it unless necessary.
+  // If thinking IS enabled, we must NOT set maxOutputTokens or must set it carefully.
+  // We'll leave it unset to be safe.
+
+  const response = await chat.sendMessage({
+    message,
+    config
+  });
+
+  return response;
+};
+
+/**
+ * IMAGE GENERATION
+ * Uses gemini-3-pro-image-preview
+ */
+export const generateImage = async (prompt: string, aspectRatio: string) => {
+  if (!ai) throw new Error("AI not configured");
+  
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-pro-image-preview',
+    contents: {
+      parts: [{ text: prompt }]
+    },
+    config: {
+      imageConfig: {
+        aspectRatio: aspectRatio as any, 
+        imageSize: "1K"
+      }
+    }
+  });
+
+  // Extract image
+  for (const part of response.candidates?.[0]?.content?.parts || []) {
+    if (part.inlineData) {
+      return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+    }
+  }
+  return null;
+};
+
+/**
+ * TEXT TO SPEECH
+ * Uses gemini-2.5-flash-preview-tts
+ */
+export const generateSpeech = async (text: string) => {
+  if (!ai) throw new Error("AI not configured");
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash-preview-tts",
+    contents: [{ parts: [{ text }] }],
+    config: {
+      responseModalities: [Modality.AUDIO],
+      speechConfig: {
+        voiceConfig: {
+          prebuiltVoiceConfig: { voiceName: 'Kore' },
+        },
+      },
+    },
+  });
+
+  const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+  return base64Audio;
+};
+
+/**
+ * AUDIO TRANSCRIPTION
+ * Uses gemini-3-flash-preview
+ */
+export const transcribeAudio = async (base64Audio: string, mimeType: string) => {
+  if (!ai) throw new Error("AI not configured");
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-3-flash-preview',
+    contents: {
+      parts: [
+        {
+          inlineData: {
+            mimeType: mimeType,
+            data: base64Audio
+          }
+        },
+        { text: "Transcribe this audio exactly." }
+      ]
+    }
+  });
+
+  return response.text;
+};
+
+/**
+ * Existing Functions
+ */
+
 export const reframeThought = async (record: Omit<ThoughtRecord, 'id' | 'timestamp' | 'reframe'>): Promise<string> => {
   if (!ai) return handleMissingApi("Let's look at this differently. Is there evidence that supports this thought? Is there evidence against it?");
 
@@ -42,7 +169,7 @@ export const reframeThought = async (record: Omit<ThoughtRecord, 'id' | 'timesta
       contents: prompt,
       config: {
         maxOutputTokens: 150,
-        temperature: 0.7, // Slightly creative but grounded
+        temperature: 0.7, 
       }
     });
 
@@ -53,9 +180,6 @@ export const reframeThought = async (record: Omit<ThoughtRecord, 'id' | 'timesta
   }
 };
 
-/**
- * Generates a calm daily insight based on logs.
- */
 export const generateDailyInsight = async (logs: any[]): Promise<{ title: string; body: string }> => {
   if (!ai) return { title: "Noticing Patterns", body: "Consistency helps us understand our needs. Keep logging to see more." };
 
@@ -66,9 +190,11 @@ export const generateDailyInsight = async (logs: any[]): Promise<{ title: string
       Generate a "Daily Insight" card.
       Rules:
       1. Tone: Calm, observational, non-judgmental.
-      2. No alarmist language.
+      2. No alarmist language or "red alerts".
       3. Format: JSON with "title" (short) and "body" (1 sentence explanation + 1 gentle suggestion).
       4. If data is scarce, encourage small steps.
+      5. STRICT SAFETY: Do NOT use clinical terms like 'recovery score', 'optimal', 'symptoms', 'diagnosis'. 
+      6. Use metaphors like 'balance', 'rhythm', 'energy', 'rest pattern'.
     `;
 
     const response = await ai.models.generateContent({

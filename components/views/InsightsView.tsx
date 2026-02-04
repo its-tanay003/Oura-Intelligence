@@ -3,19 +3,23 @@ import { Card, SectionHeader, EmptyState } from '../Shared';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { generateDailyInsight } from '../../services/geminiService';
 import { Sparkles, Calendar } from 'lucide-react';
-import { View } from '../../types';
+import { View, Emotion, DailyLog } from '../../types';
 
-// Mock Data - Temporarily set to empty to demonstrate the "Empty State" UI
-const data: any[] = []; 
-// const data = [
-//   { day: 'M', score: 60, type: 'Rest' },
-//   { day: 'T', score: 75, type: 'Active' },
-//   { day: 'W', score: 50, type: 'Low' },
-//   { day: 'T', score: 85, type: 'Good' },
-//   { day: 'F', score: 70, type: 'Steady' },
-//   { day: 'S', score: 90, type: 'Peak' },
-//   { day: 'S', score: 80, type: 'Rest' },
-// ];
+// Mock Data for demonstration
+const mockLogs: DailyLog[] = [
+  { date: 'Mon', sleepHours: 6.5, mood: Emotion.TIRED, hydration: 4, stressLevel: 3 },
+  { date: 'Tue', sleepHours: 7.0, mood: Emotion.CALM, hydration: 6, stressLevel: 2 },
+  { date: 'Wed', sleepHours: 8.5, mood: Emotion.ENERGETIC, hydration: 8, stressLevel: 1 },
+  { date: 'Thu', sleepHours: 5.5, mood: Emotion.ANXIOUS, hydration: 3, stressLevel: 4 },
+  { date: 'Fri', sleepHours: 7.5, mood: Emotion.NEUTRAL, hydration: 5, stressLevel: 2 },
+  { date: 'Sat', sleepHours: 9.0, mood: Emotion.CALM, hydration: 7, stressLevel: 1 },
+  { date: 'Sun', sleepHours: 8.0, mood: Emotion.CALM, hydration: 6, stressLevel: 1 },
+];
+
+const chartData = mockLogs.map(log => ({
+    day: log.date,
+    score: Math.min(100, (log.sleepHours / 9) * 60 + (log.hydration / 8) * 20 + ((6 - log.stressLevel) / 5) * 20)
+}));
 
 interface InsightsViewProps {
     onChangeView: (view: View) => void;
@@ -25,10 +29,10 @@ export const InsightsView: React.FC<InsightsViewProps> = ({ onChangeView }) => {
   const [insight, setInsight] = useState<{title: string, body: string} | null>(null);
 
   useEffect(() => {
-    // Only fetch insights if we have data
-    if (data.length > 0) {
+    // Fetch insights using Gemini
+    if (mockLogs.length > 0) {
         const fetchInsight = async () => {
-            const result = await generateDailyInsight(data);
+            const result = await generateDailyInsight(mockLogs);
             setInsight(result);
         };
         fetchInsight();
@@ -36,7 +40,7 @@ export const InsightsView: React.FC<InsightsViewProps> = ({ onChangeView }) => {
   }, []);
 
   // Empty State Logic
-  if (data.length < 3) {
+  if (mockLogs.length < 3) {
     return (
         <div className="pb-12 animate-fade-in space-y-6 md:space-y-8 max-w-4xl mx-auto">
             <SectionHeader title="Insights" subtitle="Patterns appear over time." />
@@ -61,15 +65,15 @@ export const InsightsView: React.FC<InsightsViewProps> = ({ onChangeView }) => {
       <SectionHeader title="Insights" subtitle="Understanding patterns, not just numbers." />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-8">
-        {/* AI Insight */}
+        {/* AI Insight Section */}
         <div className="md:col-span-1">
-            <Card variant="highlight" className="border-l-4 border-l-teal-400 h-full p-5 md:p-6">
+            <Card variant="highlight" className="border-l-4 border-l-teal-400 h-full p-5 md:p-6 bg-teal-50/50">
                 <div className="flex gap-3 mb-3 md:mb-4">
                     <Sparkles size={20} className="text-teal-600 mt-0.5 shrink-0" />
-                    <h3 className="font-medium text-slate-800 text-lg">{insight ? insight.title : "Analyzing Patterns..."}</h3>
+                    <h3 className="font-medium text-slate-800 text-lg">{insight ? insight.title : "Noticing Patterns..."}</h3>
                 </div>
                 <p className="text-slate-600 text-sm md:text-base leading-relaxed">
-                    {insight ? insight.body : "Looking at your recent recovery and stress levels to find helpful connections."}
+                    {insight ? insight.body : "Looking at your recent rest and rhythm to find helpful connections."}
                 </p>
             </Card>
         </div>
@@ -77,13 +81,13 @@ export const InsightsView: React.FC<InsightsViewProps> = ({ onChangeView }) => {
         {/* Chart */}
         <section className="md:col-span-2 bg-white p-5 md:p-8 rounded-[2rem] border border-slate-100 shadow-sm">
             <div className="mb-6 flex items-center justify-between">
-                <h3 className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-wider">Weekly Energy</h3>
+                <h3 className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-wider">Weekly Rhythm</h3>
                 <span className="text-[10px] md:text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded-full">Last 7 Days</span>
             </div>
             
             <div className="h-64 md:h-72 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data} barSize={32}>
+                <BarChart data={chartData} barSize={32}>
                     <XAxis 
                         dataKey="day" 
                         axisLine={false} 
@@ -96,7 +100,7 @@ export const InsightsView: React.FC<InsightsViewProps> = ({ onChangeView }) => {
                         contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', padding: '8px 12px'}}
                     />
                     <Bar dataKey="score" radius={[6, 6, 6, 6]}>
-                    {data.map((entry, index) => (
+                    {chartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.score > 80 ? '#14b8a6' : '#cbd5e1'} />
                     ))}
                     </Bar>
@@ -104,7 +108,7 @@ export const InsightsView: React.FC<InsightsViewProps> = ({ onChangeView }) => {
                 </ResponsiveContainer>
             </div>
             <p className="text-xs text-center text-slate-400 mt-6 max-w-sm mx-auto">
-                Bars show relative energy levels. Consistent sleep (teal) correlates with higher days.
+                Bars indicate relative balance. Consistent inputs (teal) generally align with better system stability.
             </p>
         </section>
       </div>

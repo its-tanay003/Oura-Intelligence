@@ -1,17 +1,25 @@
 import React, { useState } from 'react';
-import { Card, Button, SectionHeader } from '../Shared';
-import { Moon, Droplets, Activity, Save } from 'lucide-react';
+import { Card, Button, SectionHeader, VoiceInput } from '../Shared';
+import { Moon, Droplets, Activity, Save, Edit3 } from 'lucide-react';
 import { Emotion } from '../../types';
 
 export const LogView: React.FC = () => {
   const [saved, setSaved] = useState(false);
   const [sleep, setSleep] = useState(7);
   const [hydration, setHydration] = useState(3);
+  const [notes, setNotes] = useState('');
 
   const handleSave = () => {
     // Simulate save
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const appendNote = (text: string) => {
+    setNotes(prev => {
+        const separator = prev.trim() ? ' ' : '';
+        return prev + separator + text;
+    });
   };
 
   if (saved) {
@@ -97,6 +105,25 @@ export const LogView: React.FC = () => {
              </button>
           ))}
         </div>
+      </section>
+
+      {/* Notes Section with Voice Input */}
+      <section className="space-y-4">
+          <div className="flex items-center justify-between text-slate-700 font-medium px-1">
+             <div className="flex items-center gap-3">
+                 <Edit3 size={20} className="text-slate-400" />
+                 <span className="text-base md:text-lg">Notes</span>
+             </div>
+             <VoiceInput onTranscript={appendNote} />
+          </div>
+          <div className="relative">
+              <textarea 
+                 value={notes}
+                 onChange={(e) => setNotes(e.target.value)}
+                 placeholder="Anything else on your mind? Tap the mic to speak."
+                 className="w-full h-32 p-4 rounded-3xl bg-slate-50 border border-slate-100 focus:bg-white focus:border-teal-200 focus:ring-2 focus:ring-teal-50/50 outline-none resize-none transition-all placeholder:text-slate-400 text-slate-700 text-base leading-relaxed"
+              />
+          </div>
       </section>
 
       <div className="pt-6 md:pt-8">

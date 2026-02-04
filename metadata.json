@@ -1,5 +1,7 @@
 {
   "name": "Oura - Calm Intelligence",
   "description": "A reality-anchored, mental-health-safe intelligence platform designed to regulate stress and increase self-awareness without cognitive load.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }

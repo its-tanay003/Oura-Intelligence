@@ -1,10 +1,12 @@
+
 export enum View {
   HOME = 'HOME',
   LOG = 'LOG',
   INSIGHTS = 'INSIGHTS',
   MIND = 'MIND',
   GOALS = 'GOALS',
-  PROFILE = 'PROFILE'
+  PROFILE = 'PROFILE',
+  ASSISTANT = 'ASSISTANT'
 }
 
 export enum Emotion {
@@ -16,12 +18,22 @@ export enum Emotion {
   OVERWHELMED = 'Overwhelmed'
 }
 
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  avatar?: string;
+  provider: 'email' | 'google' | 'apple';
+  joinDate: string;
+}
+
 export interface UserProfile {
   // Identity
   name: string;
   email: string;
   pronouns: string;
   region: string;
+  dateOfBirth?: string;
   
   // Work & Context
   workType: 'Student' | 'Office' | 'Remote' | 'Manual' | 'Shift-based' | 'Freelance' | 'Other';

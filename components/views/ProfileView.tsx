@@ -1,19 +1,40 @@
-import React, { useState } from 'react';
-import { Card, Button, SectionHeader, Toggle } from '../Shared';
-import { Shield, Briefcase, Smartphone, Download, Trash2, Camera, Activity, Lock, Eye, FileText, BarChart3 } from 'lucide-react';
-import { UserProfile } from '../../types';
 
-export const ProfileView: React.FC = () => {
-  // Mock Initial State
+import React, { useState, useEffect } from 'react';
+import { Card, Button, SectionHeader, Toggle } from '../Shared';
+import { Shield, Briefcase, Smartphone, Download, Trash2, Camera, Activity, Lock, Eye, FileText, BarChart3, Calendar, LogOut, User as UserIcon } from 'lucide-react';
+import { UserProfile, User } from '../../types';
+import { AuthForm } from '../auth/AuthComponents';
+import { logout } from '../../services/authService';
+
+interface ProfileViewProps {
+  user: User | null;
+  onLoginSuccess: (user: User) => void;
+  onLogout: () => void;
+}
+
+export const ProfileView: React.FC<ProfileViewProps> = ({ user, onLoginSuccess, onLogout }) => {
+  // --- AUTHENTICATION GATE ---
+  if (!user) {
+      return (
+          <div className="max-w-md mx-auto py-12 animate-fade-in">
+             <Card className="p-8 md:p-12 bg-white/50 backdrop-blur-sm border-dashed border-2">
+                 <AuthForm onSuccess={onLoginSuccess} />
+             </Card>
+          </div>
+      );
+  }
+
+  // --- MOCK INITIAL STATE (Ideally fetched from backend using user.id) ---
   const [profile, setProfile] = useState<UserProfile>({
-    name: 'Alex',
-    email: 'alex@example.com',
-    pronouns: 'They/Them',
+    name: user.name || 'Explorer',
+    email: user.email,
+    pronouns: '',
     region: 'North America',
+    dateOfBirth: '',
     workType: 'Remote',
     workSchedule: 'Flexible',
     screenTime: 'High',
-    physicalActivity: 'Light',
+    physicalActivity: 'Low',
     workStress: 40,
     notifications: 'Quiet',
     privacy: {
@@ -48,27 +69,42 @@ export const ProfileView: React.FC = () => {
     setHasChanges(true);
   };
 
+  const getStressLabel = (val: number) => {
+      if (val < 35) return { text: 'Chill (Low Load)', color: 'text-teal-700 bg-teal-50 border-teal-100' };
+      if (val < 70) return { text: 'Balanced (Steady)', color: 'text-indigo-700 bg-indigo-50 border-indigo-100' };
+      return { text: 'Intense (High Load)', color: 'text-amber-700 bg-amber-50 border-amber-100' };
+  };
+
+  const stressInfo = getStressLabel(profile.workStress);
+
   return (
     <div className="max-w-3xl mx-auto pb-12 animate-fade-in space-y-10">
       
       {/* Header with Sticky Save Action */}
       <div className="flex items-center justify-between sticky top-[4.5rem] z-30 bg-slate-50/90 backdrop-blur-sm py-4 border-b border-slate-100 transition-all">
-        <SectionHeader title="Profile & Context" subtitle="How the system understands you." />
-        {hasChanges && (
-            <div className="animate-fade-in">
-                <Button onClick={handleSave} className="h-10 text-sm px-5" isLoading={isSaving}>
-                {isSaving ? 'Syncing...' : 'Save Changes'}
-                </Button>
-            </div>
-        )}
+        <div className="flex items-center gap-3">
+             <SectionHeader title="Profile & Context" subtitle={`Signed in as ${user.email}`} />
+        </div>
+        <div className="flex gap-3">
+             {hasChanges && (
+                <div className="animate-fade-in">
+                    <Button onClick={handleSave} className="h-10 text-sm px-5" isLoading={isSaving}>
+                    {isSaving ? 'Syncing...' : 'Save Changes'}
+                    </Button>
+                </div>
+            )}
+             <button onClick={onLogout} className="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-full transition-colors" title="Sign Out">
+                 <LogOut size={20} />
+             </button>
+        </div>
       </div>
 
       {/* Identity Card */}
       <section>
           <Card className="flex flex-col md:flex-row items-start md:items-center gap-6 md:gap-8">
             <div className="relative group cursor-pointer self-center md:self-auto">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-3xl font-medium shadow-lg shadow-teal-100">
-                {profile.name.charAt(0)}
+            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-3xl font-medium shadow-lg shadow-teal-100 overflow-hidden">
+                {user.avatar ? <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" /> : user.name.charAt(0)}
             </div>
             <div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <Camera size={24} className="text-white" />
@@ -94,6 +130,25 @@ export const ProfileView: React.FC = () => {
                     placeholder="e.g. they/them"
                     />
                 </div>
+                
+                {/* Date of Birth Field */}
+                <div className="sm:col-span-2 pt-2">
+                    <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 ml-1">Date of Birth (Optional)</label>
+                    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                         <div className="relative w-full sm:w-auto">
+                            <input 
+                                type="date"
+                                value={profile.dateOfBirth || ''}
+                                onChange={(e) => updateProfile('dateOfBirth', e.target.value)}
+                                className="w-full sm:w-auto min-w-[200px] p-3 pl-10 rounded-2xl bg-slate-100 border-2 border-transparent focus:bg-white focus:border-teal-200 focus:ring-0 outline-none transition-all text-slate-800 placeholder:text-slate-400"
+                            />
+                            <Calendar size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                        </div>
+                        <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
+                            Used only for age-based insights. Never shared publicly.
+                        </p>
+                    </div>
+                </div>
             </div>
             </div>
         </Card>
@@ -107,7 +162,7 @@ export const ProfileView: React.FC = () => {
                 Daily Context
             </h3>
             <p className="text-sm text-slate-500 mt-1 max-w-lg leading-relaxed">
-                This helps us tailor insights to your reality. If you have a high-screen job, we won't nag you about screens—we'll help you mitigate the effects.
+                This helps us tailor insights to your reality.
             </p>
         </div>
         
@@ -160,27 +215,37 @@ export const ProfileView: React.FC = () => {
                  </div>
 
                  {/* Work Stress Slider */}
-                 <div className="space-y-4">
+                 <div className="space-y-5">
                      <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <Activity size={18} className="text-slate-400" />
                             <label className="text-sm font-medium text-slate-700">Work Intensity</label>
                         </div>
-                        <span className="text-xs font-medium text-slate-400 bg-slate-100 px-2 py-1 rounded-md">Self-rated</span>
+                        <div className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-all duration-300 ${stressInfo.color}`}>
+                            {stressInfo.text}
+                        </div>
                      </div>
-                     <div className="pt-2">
+                     
+                     <div className="relative pt-2 pb-1">
+                        {/* Custom Track Background with Gradients */}
+                        <div className="absolute top-1/2 left-0 right-0 h-2 -mt-1 rounded-full bg-gradient-to-r from-teal-100 via-indigo-100 to-amber-100 pointer-events-none overflow-hidden" />
+
+                        {/* Input Range - overriding global style for transparency */}
                         <input 
                           type="range" 
                           min="0" 
                           max="100" 
+                          step="5"
                           value={profile.workStress}
                           onChange={(e) => updateProfile('workStress', parseInt(e.target.value))}
-                          className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer"
+                          className="relative w-full h-2 bg-transparent appearance-none cursor-pointer z-10 focus:outline-none [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-runnable-track]:h-2"
                         />
-                        <div className="flex justify-between text-xs text-slate-400 mt-2 font-medium">
-                            <span>Chill</span>
-                            <span>Balanced</span>
-                            <span>Intense</span>
+                        
+                        {/* Markers */}
+                        <div className="flex justify-between text-[10px] uppercase tracking-wider font-bold text-slate-300 mt-3 select-none">
+                            <span className="text-teal-400/80 pl-1">Chill</span>
+                            <span className="text-indigo-400/80">Balanced</span>
+                            <span className="text-amber-400/80 pr-1">Intense</span>
                         </div>
                      </div>
                  </div>

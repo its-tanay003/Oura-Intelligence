@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Button, SectionHeader } from '../Shared';
+import { Card, Button, SectionHeader, VoiceInput } from '../Shared';
 import { reframeThought } from '../../services/geminiService';
 import { Wind, ShieldCheck, RefreshCcw, ArrowLeft } from 'lucide-react';
 
@@ -25,6 +25,13 @@ export const MindView: React.FC = () => {
     setFeeling('');
     setThought('');
     setReframe(null);
+  };
+
+  const appendText = (setter: React.Dispatch<React.SetStateAction<string>>) => (text: string) => {
+    setter(prev => {
+        const separator = prev.trim() ? ' ' : '';
+        return prev + separator + text;
+    });
   };
 
   // Step 0: Intro
@@ -81,7 +88,10 @@ export const MindView: React.FC = () => {
         
         <div className="space-y-6 md:space-y-8 bg-white p-5 md:p-10 rounded-[2rem] border border-slate-100 shadow-sm">
             <div>
-                <label className="block text-sm md:text-base font-medium text-slate-700 mb-2 md:mb-3">What actually happened?</label>
+                <div className="flex justify-between items-center mb-2 md:mb-3">
+                    <label className="block text-sm md:text-base font-medium text-slate-700">What actually happened?</label>
+                    <VoiceInput onTranscript={appendText(setSituation)} />
+                </div>
                 <textarea 
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none resize-none h-28 md:h-32 text-base md:text-lg text-slate-700 placeholder:text-slate-300 transition-all shadow-inner"
                     placeholder="E.g., I missed a deadline."
@@ -91,7 +101,10 @@ export const MindView: React.FC = () => {
             </div>
 
             <div>
-                <label className="block text-sm md:text-base font-medium text-slate-700 mb-2 md:mb-3">What are you assuming this means?</label>
+                <div className="flex justify-between items-center mb-2 md:mb-3">
+                    <label className="block text-sm md:text-base font-medium text-slate-700">What are you assuming this means?</label>
+                    <VoiceInput onTranscript={appendText(setThought)} />
+                </div>
                 <textarea 
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none resize-none h-28 md:h-32 text-base md:text-lg text-slate-700 placeholder:text-slate-300 transition-all shadow-inner"
                     placeholder="E.g., Everyone thinks I'm lazy and I'll get fired."
@@ -101,7 +114,10 @@ export const MindView: React.FC = () => {
             </div>
 
             <div>
-                <label className="block text-sm md:text-base font-medium text-slate-700 mb-2 md:mb-3">One word for the emotion</label>
+                <div className="flex justify-between items-center mb-2 md:mb-3">
+                    <label className="block text-sm md:text-base font-medium text-slate-700">One word for the emotion</label>
+                    <VoiceInput onTranscript={appendText(setFeeling)} />
+                </div>
                 <input 
                     type="text"
                     className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200 focus:border-teal-500 outline-none text-base md:text-lg text-slate-700 placeholder:text-slate-300 shadow-inner"
