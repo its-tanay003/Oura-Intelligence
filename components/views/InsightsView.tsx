@@ -51,7 +51,7 @@ export const InsightsView: React.FC = () => {
                 <span className="text-[10px] md:text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded-full">Last 7 Days</span>
             </div>
             
-            <div className="h-56 md:h-72 w-full">
+            <div className="h-64 md:h-72 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data} barSize={32}>
                     <XAxis 

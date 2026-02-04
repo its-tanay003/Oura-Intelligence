@@ -91,7 +91,7 @@ export const LogView: React.FC = () => {
           {[Emotion.CALM, Emotion.TIRED, Emotion.ANXIOUS, Emotion.ENERGETIC].map((e) => (
              <button 
                key={e}
-               className="p-4 md:p-5 rounded-2xl border border-slate-100 text-slate-600 bg-white hover:bg-teal-50 hover:border-teal-100 hover:text-teal-700 transition-all text-sm md:text-base font-medium active:scale-[0.98] shadow-sm"
+               className="p-4 md:p-5 rounded-2xl border border-slate-100 text-slate-600 bg-white hover:bg-teal-50 hover:border-teal-100 hover:text-teal-700 transition-all text-sm md:text-base font-medium active:scale-[0.98] shadow-sm touch-manipulation"
              >
                 {e}
              </button>

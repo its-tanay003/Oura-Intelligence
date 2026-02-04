@@ -55,8 +55,8 @@ const App: React.FC = () => {
       </header>
 
       {/* Main Content Area */}
-      {/* Added pb-24 for mobile to clear bottom nav, reset to pb-12 on desktop */}
-      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 md:py-12 pb-24 md:pb-12 animate-fade-in">
+      {/* Increased padding-bottom to pb-32 for mobile to safely clear floating nav + safe areas */}
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 py-6 md:py-12 pb-32 md:pb-12 animate-fade-in">
         {renderView()}
       </main>
 
@@ -96,7 +96,7 @@ const NavLink = ({ label, active, onClick }: { label: string, active: boolean, o
 const MobileIcon = ({ icon, label, isActive, onClick }: any) => (
   <button 
     onClick={onClick}
-    className={`flex flex-col items-center gap-1 w-16 transition-colors ${isActive ? 'text-teal-600' : 'text-slate-400'}`}
+    className={`flex flex-col items-center gap-1 w-16 py-1 transition-colors active:scale-95 touch-manipulation ${isActive ? 'text-teal-600' : 'text-slate-400'}`}
   >
     {icon}
     <span className="text-[10px] font-medium">{label}</span>

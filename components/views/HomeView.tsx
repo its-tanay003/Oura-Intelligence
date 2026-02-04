@@ -42,7 +42,8 @@ export const HomeView: React.FC<HomeViewProps> = ({ onChangeView }) => {
                <span className="text-sm font-medium text-slate-400 uppercase tracking-wider">Internal Balance</span>
                <button 
                   onClick={() => setIsExpanded(!isExpanded)}
-                  className="text-teal-600 text-sm hover:underline"
+                  className="text-teal-600 text-sm md:text-base hover:underline p-2 -mr-2 rounded-lg hover:bg-teal-50 transition-colors"
+                  aria-expanded={isExpanded}
                >
                  {isExpanded ? "Show Less" : "Deep Dive"}
                </button>
@@ -58,7 +59,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onChangeView }) => {
             {isExpanded && (
               <div className="mt-8 pt-6 border-t border-slate-100 animate-slide-up">
                 <h4 className="font-medium text-slate-800 mb-2">Analysis</h4>
-                <p className="text-slate-600 text-sm leading-relaxed max-w-prose">
+                <p className="text-slate-600 text-sm md:text-base leading-relaxed max-w-prose">
                   Your patterns suggest a stable week. Mental load is lower than average, providing a window for creative work or rest. No immediate action required.
                 </p>
               </div>
@@ -72,13 +73,13 @@ export const HomeView: React.FC<HomeViewProps> = ({ onChangeView }) => {
              <p className="text-sm font-medium text-slate-400 uppercase tracking-wider pl-1">Recommended</p>
           </div>
           
-          <Card variant="highlight" onClick={() => onChangeView(View.MIND)} className="cursor-pointer hover:scale-[1.01] transition-transform">
+          <Card variant="highlight" onClick={() => onChangeView(View.MIND)} className="cursor-pointer hover:scale-[1.01] transition-transform active:scale-[0.98]">
             <div className="flex items-start gap-4">
               <div className="p-3 bg-white rounded-full text-teal-600 shadow-sm shrink-0">
                 <PauseCircle size={24} />
               </div>
               <div>
-                <h3 className="font-medium text-slate-800">Reality Check</h3>
+                <h3 className="font-medium text-slate-800 text-lg">Reality Check</h3>
                 <p className="text-slate-500 text-sm mt-1 leading-relaxed">A gentle 2-minute thought clearing exercise to separate fact from feeling.</p>
               </div>
               <div className="ml-auto self-center text-teal-600">
@@ -91,7 +92,7 @@ export const HomeView: React.FC<HomeViewProps> = ({ onChangeView }) => {
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-slate-600 font-medium block">Do nothing right now</span>
-                <span className="text-xs text-slate-400">Sometimes the best action is inaction.</span>
+                <span className="text-xs md:text-sm text-slate-400">Sometimes the best action is inaction.</span>
               </div>
               <span className="text-xs text-slate-500 bg-slate-200/50 px-2 py-1 rounded-full">Permitted</span>
             </div>
