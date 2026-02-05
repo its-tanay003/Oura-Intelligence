@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, SectionHeader, VoiceInput, EmptyState, Input } from '../Shared';
 import { generateLearningJourney } from '../../services/geminiService';
-import { Compass, CheckCircle, Circle, Plus, ChevronDown, ChevronUp, Loader2, Sparkles, X, Target, Zap, Beaker, Minus, Trash2, Repeat, ExternalLink, CalendarDays, Check } from 'lucide-react';
+import { Compass, CheckCircle, Circle, Plus, ChevronDown, ChevronUp, Loader2, Sparkles, X, Target, Zap, Beaker, Minus, Trash2, Repeat, ExternalLink, CalendarDays, Check, GripVertical } from 'lucide-react';
 import { Goal, Milestone } from '../../types';
 import { FadeIn } from '../Motion';
+import { Reorder, useDragControls } from 'framer-motion';
 
 type CreateStep = 'TYPE_SELECT' | 'INPUT_LEARNING' | 'INPUT_HABIT' | 'GENERATING' | 'REVIEW';
 
@@ -171,10 +172,6 @@ export const GoalsView: React.FC = () => {
           
           const newHistory = { ...(g.history || {}) };
           newHistory[dateKey] = !newHistory[dateKey];
-          
-          // Recalculate 'progress' based on simple "did I do it today?" logic for the UI bar
-          // Or strictly visual. Let's keep 'progress' as the manual counter for now, 
-          // or derive it from today's status if it's a boolean habit.
           
           return { ...g, history: newHistory };
       }));
@@ -381,18 +378,19 @@ export const GoalsView: React.FC = () => {
             icon={Target}
           />
       ) : (
-          <div className="grid grid-cols-1 gap-6">
+          <Reorder.Group axis="y" values={goals} onReorder={setGoals} className="grid grid-cols-1 gap-6">
               {goals.map(goal => (
-                  <GoalCard 
-                    key={goal.id} 
-                    goal={goal} 
-                    onToggleMilestone={toggleMilestone} 
-                    onUpdateValue={updateGoalValue}
-                    onToggleHistory={toggleHabitHistory}
-                    onDelete={deleteGoal}
-                  />
+                  <Reorder.Item key={goal.id} value={goal} className="relative rounded-3xl">
+                      <GoalCard 
+                        goal={goal} 
+                        onToggleMilestone={toggleMilestone} 
+                        onUpdateValue={updateGoalValue}
+                        onToggleHistory={toggleHabitHistory}
+                        onDelete={deleteGoal}
+                      />
+                  </Reorder.Item>
               ))}
-          </div>
+          </Reorder.Group>
       )}
     </div>
   );
@@ -408,6 +406,7 @@ const GoalCard: React.FC<{
     onDelete: (id: string) => void;
 }> = ({ goal, onToggleMilestone, onUpdateValue, onToggleHistory, onDelete }) => {
     const [expanded, setExpanded] = useState(false);
+    const dragControls = useDragControls();
     
     const isComplete = goal.progress === 100;
     const isLearning = goal.type === 'learning';
@@ -448,13 +447,18 @@ const GoalCard: React.FC<{
     return (
         <Card className={`transition-all duration-500 ${isComplete ? 'opacity-75' : ''}`}>
             {/* Header */}
-            <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4 flex-1 cursor-pointer" onClick={() => setExpanded(!expanded)}>
-                    <div className={`p-3 rounded-full shrink-0 ${getColors()}`}>
+            <div className="flex items-start gap-4">
+                 {/* Drag Handle */}
+                 <div className="pt-4 pl-1 text-slate-300 cursor-grab active:cursor-grabbing hover:text-slate-500 touch-none">
+                     <GripVertical size={20} />
+                 </div>
+
+                <div className="flex items-start gap-4 flex-1">
+                    <div className={`p-3 rounded-full shrink-0 ${getColors()} cursor-pointer`} onClick={() => setExpanded(!expanded)}>
                         {isComplete ? <CheckCircle size={24} /> : getIcon()}
                     </div>
                     <div className="flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 cursor-pointer" onClick={() => setExpanded(!expanded)}>
                              <h3 className={`text-lg font-medium text-slate-800 dark:text-slate-100 ${isComplete ? 'line-through text-slate-400' : ''}`}>
                                 {goal.title}
                             </h3>
@@ -466,7 +470,7 @@ const GoalCard: React.FC<{
                         </div>
                        
                         
-                        <div className="mt-2">
+                        <div className="mt-2 cursor-pointer" onClick={() => setExpanded(!expanded)}>
                              {/* Learning Progress: Segmented Bar */}
                             {isLearning && goal.milestones && (
                                 <div className="flex gap-1 h-1.5 w-full max-w-[200px]">
@@ -514,19 +518,16 @@ const GoalCard: React.FC<{
                     </div>
                 </div>
 
-                {/* Quick Actions for Habits/Experiments (Legacy Counters) */}
-                {/* Removed in favor of 3-day history bubbles for visual clarity */}
-                
                 {/* Expand Toggle */}
                 {isLearning && (
-                    <button onClick={() => setExpanded(!expanded)} className="text-slate-300 hover:text-slate-500 dark:hover:text-slate-400 transition-colors ml-4 p-1">
+                    <button onClick={() => setExpanded(!expanded)} className="text-slate-300 hover:text-slate-500 dark:hover:text-slate-400 transition-colors pt-2 p-1">
                         {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                     </button>
                 )}
                 
                 {/* Simple Delete for Non-Learning */}
                 {(!isLearning) && (
-                     <button onClick={() => setExpanded(!expanded)} className="text-slate-300 hover:text-slate-500 dark:hover:text-slate-400 transition-colors ml-4 p-1">
+                     <button onClick={() => setExpanded(!expanded)} className="text-slate-300 hover:text-slate-500 dark:hover:text-slate-400 transition-colors pt-2 p-1">
                         <ChevronDown size={20} />
                      </button>
                 )}
